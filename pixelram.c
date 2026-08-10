@@ -3269,6 +3269,9 @@ typedef struct
 
     Texture2D texture;
 
+    int target_fps;
+    double next_present_time;
+
     bool mouse_relative;
 
     pixel_key_event key_queue[PIXELRAM_KEY_QUEUE_SIZE];
@@ -3752,8 +3755,12 @@ bool screen_open(
     );
 
 
+    pr.target_fps = 60;
+    pr.next_present_time =
+        GetTime() + 1.0 / 60.0;
+
 #ifndef PLATFORM_WEB
-    SetTargetFPS(60);
+    SetTargetFPS(pr.target_fps);
 #endif
 
 
@@ -4239,6 +4246,84 @@ void wait_vblank(void)
 }
 
 
+void set_target_fps(
+    int fps)
+{
+    if (!pr.initialized)
+        return;
+
+    if (fps < 0)
+        fps = 0;
+
+    pr.target_fps = fps;
+
+#ifdef PLATFORM_WEB
+    if (fps > 0)
+    {
+        pr.next_present_time =
+            GetTime() +
+            1.0 / (double)fps;
+    }
+    else
+    {
+        pr.next_present_time = 0.0;
+    }
+#else
+    if (pr.initialized)
+        SetTargetFPS(fps);
+#endif
+}
+
+
+#ifdef PLATFORM_WEB
+static void wait_for_target_frame(void)
+{
+    /*
+     * Browser presentation is synchronized to requestAnimationFrame().
+     * For targets below the display refresh rate, wait through enough
+     * animation frames to reach the next requested presentation time.
+     * A small tolerance avoids accidentally skipping an extra refresh
+     * because of timer rounding at common rates such as 60 Hz.
+     */
+    wait_vblank();
+
+    if (pr.target_fps <= 0)
+        return;
+
+    const double tolerance = 0.001;
+    double now = GetTime();
+
+    while (
+        now + tolerance <
+        pr.next_present_time
+    )
+    {
+        wait_vblank();
+        now = GetTime();
+    }
+
+    const double interval =
+        1.0 /
+        (double)pr.target_fps;
+
+    pr.next_present_time += interval;
+
+    /*
+     * If a frame took much longer than expected, restart the schedule
+     * from now instead of trying to catch up with a burst of frames.
+     */
+    if (
+        pr.next_present_time <
+        now - interval
+    )
+    {
+        pr.next_present_time =
+            now + interval;
+    }
+}
+#endif
+
+
 void sleep_ms(
     uint32_t ms)
 {
@@ -4261,7 +4346,9 @@ void present(void)
         return;
 
 
-    wait_vblank();
+#ifdef PLATFORM_WEB
+    wait_for_target_frame();
+#endif
 
 
     /*

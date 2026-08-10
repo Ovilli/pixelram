@@ -11,8 +11,8 @@ extern "C" {
 
 #define PIXELRAM_VERSION_MAJOR 0
 #define PIXELRAM_VERSION_MINOR 1
-#define PIXELRAM_VERSION_PATCH 0
-#define PIXELRAM_VERSION "0.1.0"
+#define PIXELRAM_VERSION_PATCH 1
+#define PIXELRAM_VERSION "0.1.1"
 
 /*
  * PixelRAM is a small software framebuffer API.
@@ -225,6 +225,9 @@ static inline uint16_t rgb565_pack(
 
 void present(void);
 void wait_vblank(void);
+
+/* Default: 60. Use 0 to disable PixelRAM's frame-rate cap. */
+void set_target_fps(int fps);
 
 /* Displayed pixel width / displayed pixel height. 1.0 means square. */
 void set_pixel_aspect(float ratio);

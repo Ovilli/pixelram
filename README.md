@@ -6,6 +6,8 @@ PixelRAM gives a C program a block of memory that represents the screen. You can
 
 PixelRAM is related to [Pixelflow Canvas](https://specht.github.io/pixelflow_canvas_ruby/) in spirit, but it is a different tool. Pixelflow Canvas is a Visual Studio Code canvas with language drivers. PixelRAM is a fast software framebuffer library. The fire demo in `examples/fire.c` is intentionally almost the same algorithm as the Ruby Pixelflow Canvas demo.
 
+**Documentation:** [https://specht.github.io/pixelram/](https://specht.github.io/pixelram/)
+
 ![PixelRAM fire demo](docs/images/fire.png)
 
 Application code includes only `pixelram.h`; the platform backend is an implementation detail.
@@ -31,7 +33,20 @@ int main(void)
 }
 ```
 
-In indexed mode every pixel is one byte containing a palette index from 0 to 255. The default palette is the classic 256-color VGA palette.
+In indexed mode every pixel is one byte containing a palette index from 0 to 255. The default palette is the classic 256-color VGA palette. PixelRAM presents at a maximum of **60 FPS by default**; call `set_target_fps(30)` (or another value) after `screen_open()` to choose a different cap.
+
+
+## Frame rate
+
+PixelRAM targets **60 FPS by default** on both native and WebAssembly builds. Change the cap at any time after `screen_open()`:
+
+```c
+set_target_fps(30);
+```
+
+Use `set_target_fps(0)` to disable PixelRAM's explicit frame-rate cap. Native builds then run without a target FPS; browser builds still present on browser animation frames.
+
+The frame-rate cap controls how often `present()` completes. Game logic that must behave identically at different frame rates should use `seconds()` or `ticks_ms()` for time-based movement.
 
 ## Build the examples
 
@@ -57,7 +72,7 @@ pixelram.h
 You can copy them into a project, add them to a template, or let a Makefile download a pinned release:
 
 ```make
-PIXELRAM_VERSION := v0.1.0
+PIXELRAM_VERSION := v0.1.1
 PIXELRAM_BASE := https://raw.githubusercontent.com/specht/pixelram/$(PIXELRAM_VERSION)
 PIXELRAM_DIR := vendor/pixelram
 
@@ -120,9 +135,9 @@ PixelRAM retains the web-aware behavior of the original framebuffer backend: pre
 
 ## Documentation
 
-The GitHub Pages source is in `docs/`, and `.github/workflows/pages.yml` builds it with Jekyll. After publishing the repository as `specht/pixelram`, set GitHub Pages to use **GitHub Actions** as its source. The intended documentation URL is:
+The complete documentation is available at **[https://specht.github.io/pixelram/](https://specht.github.io/pixelram/)**.
 
-`https://specht.github.io/pixelram/`
+The GitHub Pages source lives in `docs/`, and `.github/workflows/pages.yml` builds and deploys it with GitHub Actions.
 
 ## Repository layout
 

@@ -46,7 +46,13 @@ while (!should_close())
 }
 ```
 
-`present()` makes the current software framebuffer visible and processes the input transitions needed by the event queue.
+`present()` makes the current software framebuffer visible and processes the input transitions needed by the event queue. PixelRAM targets **60 FPS by default** on both native and WebAssembly builds. You can choose another cap after opening the screen:
+
+```c
+set_target_fps(30);
+```
+
+Use `set_target_fps(0)` to disable PixelRAM's explicit FPS cap. In a browser, presentation still follows the browser's animation-frame cycle.
 
 ## Build the repository examples
 

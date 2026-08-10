@@ -18,9 +18,17 @@ while (!should_close())
 
 The web backend is enabled when the implementation is compiled with `PLATFORM_WEB` using a raylib/Emscripten toolchain.
 
-## Asyncify
+## Frame rate and Asyncify
 
-`present()` waits for the next browser animation frame, and `sleep_ms()` yields to the browser rather than blocking it. These operations use Emscripten Asyncify, so the final web link step must enable Asyncify.
+`present()` synchronizes with browser animation frames. PixelRAM targets 60 FPS by default; `set_target_fps()` can select a lower or different maximum. On high-refresh-rate displays PixelRAM skips browser animation frames as needed to honor the requested cap.
+
+```c
+set_target_fps(30);
+```
+
+`set_target_fps(0)` disables PixelRAM's additional cap, but browser presentation still follows `requestAnimationFrame()` and therefore the browser/display refresh cycle.
+
+Both animation-frame waiting and `sleep_ms()` yield to the browser rather than blocking it. These operations use Emscripten Asyncify, so the final web link step must enable Asyncify.
 
 A typical toolchain therefore defines `PLATFORM_WEB` and links with an option equivalent to:
 
