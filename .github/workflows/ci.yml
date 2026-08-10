@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Test framebuffer logic
+        run: make test
+
+      - name: Verify generated palettes and docs
+        run: |
+          make palettes
+          git diff --exit-code
+
+      - name: Check examples
+        run: |
+          cc -std=c11 -Wall -Wextra -Wpedantic -Werror \
+            -Itests/stub -I. -fsyntax-only \
+            examples/minimal.c examples/fire.c pixelram.c
+
+      - name: Check WebAssembly code path
+        run: |
+          cc -std=c11 -Wall -Wextra -Wno-unused-parameter \
+            -DPLATFORM_WEB -Itests/stub -I. -fsyntax-only pixelram.c
+
+      - name: Check raylib 6.0 header compatibility
+        run: |
+          mkdir -p build/raylib-header
+          curl -fsSL \
+            https://raw.githubusercontent.com/raysan5/raylib/6.0/src/raylib.h \
+            -o build/raylib-header/raylib.h
+          cc -std=c11 -Wall -Wextra -Wpedantic -Werror \
+            -Ibuild/raylib-header -I. -fsyntax-only pixelram.c
