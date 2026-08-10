@@ -1,0 +1,16 @@
+title: PixelRAM
+description: A tiny software framebuffer for fast, low-level pixel graphics and games.
+theme: just-the-docs
+
+url: https://specht.github.io/pixelram
+
+aux_links:
+  GitHub: https://github.com/specht/pixelram
+
+callouts:
+  note:
+    title: Note
+    color: yellow
+  important:
+    title: Important
+    color: blue
