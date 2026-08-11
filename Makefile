@@ -134,23 +134,22 @@ doom: doom-source doom-data doom-music | $(BUILD_DIR)
 		-sSDL2_MIXER_FORMATS='["mid"]' \
 		-sASYNCIFY \
 		-sFORCE_FILESYSTEM \
-		-sSINGLE_FILE=1 \
-		-sSINGLE_FILE_BINARY_ENCODE=0 \
 		--shell-file "$(SHELL_FILE)" \
 		-I. -I"$(DOOM_DIR)" \
 		$(DOOM_SOURCES) \
 		ports/doom/doom_pixelram.c \
 		ports/doom/pixelram_doom.c \
 		-lraylib -lm \
-		--embed-file doom1.wad@/doom1.wad \
-		--embed-file "$(FREEPATS_ROOT)/etc/timidity/freepats.cfg"@/timidity.cfg \
-		--embed-file "$(FREEPATS_ROOT)/usr/share/midi/freepats"@/usr/share/midi/freepats \
+		--pre-js ports/doom/preload_game_files.js \
+		--preload-file "$(FREEPATS_ROOT)/etc/timidity/freepats.cfg"@/timidity.cfg \
+		--preload-file "$(FREEPATS_ROOT)/usr/share/midi/freepats"@/usr/share/midi/freepats \
 		-o "$(BUILD_DIR)/doom.html"
+	cp -p doom1.wad "$(BUILD_DIR)/doom1.wad"
 	@echo
 	@echo "Ready: $(BUILD_DIR)/doom.html"
 
 clean-doom:
-	rm -f "$(BUILD_DIR)/doom.html"
+	rm -f "$(BUILD_DIR)"/doom.html "$(BUILD_DIR)"/doom.js "$(BUILD_DIR)"/doom.wasm "$(BUILD_DIR)"/doom.data "$(BUILD_DIR)"/doom1.wad
 	rm -rf "$(DOOM_ROOT)" "$(FREEPATS_DIR)"
 
 # ----------------------------------------------------------------------
@@ -242,11 +241,13 @@ descent: descent-source descent-data | $(BUILD_DIR)
 	@if [ -f "$(DESCENT_BUILD)/descent.js" ]; then cp "$(DESCENT_BUILD)/descent.js" "$(BUILD_DIR)/"; fi
 	@if [ -f "$(DESCENT_BUILD)/descent.wasm" ]; then cp "$(DESCENT_BUILD)/descent.wasm" "$(BUILD_DIR)/"; fi
 	@if [ -f "$(DESCENT_BUILD)/descent.data" ]; then cp "$(DESCENT_BUILD)/descent.data" "$(BUILD_DIR)/"; fi
+	cp -p descent.hog "$(BUILD_DIR)/descent.hog"
+	cp -p descent.pig "$(BUILD_DIR)/descent.pig"
 	@echo
 	@echo "Ready: $(BUILD_DIR)/descent.html"
 
 clean-descent:
-	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data
+	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data "$(BUILD_DIR)"/descent.hog "$(BUILD_DIR)"/descent.pig
 	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)"
 
 clean:

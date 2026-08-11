@@ -137,7 +137,7 @@ def main():
     ):
         shutil.copy2(port / name, target / name)
 
-    for name in ("pixelram.c", "pixelram.h", "shell.html"):
+    for name in ("pixelram.c", "pixelram.h", "shell.html", "preload_game_files.js"):
         shutil.copy2(project / name, target / name)
 
     music_assets = project / ".cache" / "descent-music"
@@ -259,8 +259,7 @@ if (EMSCRIPTEN)
         "SHELL:-sSTACK_OVERFLOW_CHECK=1"
         "SHELL:-sFORCE_FILESYSTEM"
         "SHELL:--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/platform/pixelram/shell.html"
-        "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/descent.hog@/descent.hog"
-        "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/descent.pig@/descent.pig"
+        "SHELL:--pre-js ${CMAKE_CURRENT_SOURCE_DIR}/platform/pixelram/preload_game_files.js"
         "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/TimGM6mb.sf2@/TimGM6mb.sf2"
     )
 
