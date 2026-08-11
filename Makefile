@@ -259,6 +259,7 @@ PRINCE_REPO := https://github.com/NagyD/SDLPoP.git
 PRINCE_COMMIT := 3c5add5fb7f83d4ceb542823ab66d00146c4271b
 PRINCE_ROOT := $(CACHE_DIR)/SDLPoP
 PRINCE_SRC := $(PRINCE_ROOT)/src
+PRINCE_CONFIG := $(CACHE_DIR)/prince/SDLPoP.ini
 
 PRINCE_SOURCE_NAMES := \
 	main.c data.c \
@@ -277,6 +278,8 @@ prince-source: | $(CACHE_DIR)
 	@git -C "$(PRINCE_ROOT)" checkout -q --detach "$(PRINCE_COMMIT)"
 	@git -C "$(PRINCE_ROOT)" reset -q --hard "$(PRINCE_COMMIT)"
 	@git -C "$(PRINCE_ROOT)" clean -q -fdx
+	@mkdir -p "$(dir $(PRINCE_CONFIG))"
+	python3 ports/prince/prepare_config.py "$(PRINCE_ROOT)/SDLPoP.ini" "$(PRINCE_CONFIG)"
 	@echo "SDLPoP source ready."
 
 prince: prince-source | $(BUILD_DIR)
@@ -290,13 +293,12 @@ prince: prince-source | $(BUILD_DIR)
 		-sASYNCIFY \
 		-sALLOW_MEMORY_GROWTH=1 \
 		-sFORCE_FILESYSTEM \
-		--pre-js ports/prince/prince_web.js \
 		--shell-file "$(SHELL_FILE)" \
 		-I"$(PRINCE_SRC)" \
 		$(PRINCE_SOURCES) \
 		-lm \
 		--preload-file "$(PRINCE_ROOT)/data@/data" \
-		--preload-file "$(PRINCE_ROOT)/SDLPoP.ini@/SDLPoP.ini" \
+		--preload-file "$(PRINCE_CONFIG)@/SDLPoP.ini" \
 		-o "$(BUILD_DIR)/prince.html"
 	@echo
 	@echo "Ready: $(BUILD_DIR)/prince.html"
@@ -304,7 +306,7 @@ prince: prince-source | $(BUILD_DIR)
 clean-prince:
 	rm -f "$(BUILD_DIR)"/prince.html "$(BUILD_DIR)"/prince.js \
 	      "$(BUILD_DIR)"/prince.wasm "$(BUILD_DIR)"/prince.data
-	rm -rf "$(PRINCE_ROOT)"
+	rm -rf "$(PRINCE_ROOT)" "$(CACHE_DIR)/prince"
 
 clean:
 	rm -rf "$(BUILD_DIR)"

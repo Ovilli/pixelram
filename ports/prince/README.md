@@ -1,19 +1,22 @@
-Prince CRT fix v2
+# Prince of Persia browser port
 
-SDLPoP's browser canvas can be much larger than the original 320x200 raster.
+SDLPoP's original game raster is 320x200, but its desktop defaults create a
+640x400 window. That made the PixelRAM CRT shader see 400 source rows and
+caused moire/ring artifacts.
 
-The shell now detects ports which declare a logical framebuffer size different
-from the actual browser canvas. Before applying the CRT shader it creates an
-offscreen logical framebuffer using nearest-neighbour scaling and uploads that
-exact raster to the CRT shader.
+For the browser build we keep SDLPoP's SDL2 software renderer, but generate a
+port-specific SDLPoP.ini with:
 
-For Prince this means:
+    pop_window_width = 320
+    pop_window_height = 200
+    use_correct_aspect_ratio = false
+    use_integer_scaling = false
+    scaling_type = sharp
 
-    SDL canvas (large) -> 320x200 logical canvas -> CRT shader
+The HTML shell then enlarges the actual 320x200 canvas for display, exactly
+like a normal PixelRAM framebuffer. No special CRT-resolution override is
+needed.
 
-Other PixelRAM programs whose canvas already equals their logical framebuffer
-continue to go directly into the CRT shader.
-
-Rebuild with:
+Build with:
 
     make prince
