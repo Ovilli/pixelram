@@ -20,8 +20,7 @@ extern "C" {
  * pixel_indexed8 stores one palette index per pixel.
  * The remaining modes store color values directly in the framebuffer.
  */
-typedef enum
-{
+typedef enum {
     pixel_indexed8,
     pixel_rgb565,
     pixel_rgb24,
@@ -29,8 +28,7 @@ typedef enum
 } pixel_mode;
 
 /* Printable keys deliberately use their ASCII values. */
-typedef enum
-{
+typedef enum {
     pixel_key_0 = '0',
     pixel_key_1 = '1',
     pixel_key_2 = '2',
@@ -116,14 +114,12 @@ typedef enum
     pixel_key_f12
 } pixel_key;
 
-typedef struct
-{
+typedef struct {
     pixel_key key;
     bool pressed;
 } pixel_key_event;
 
-typedef enum
-{
+typedef enum {
     pixel_mouse_left,
     pixel_mouse_right,
     pixel_mouse_middle
@@ -131,18 +127,8 @@ typedef enum
 
 /* Screen --------------------------------------------------------------- */
 
-bool screen_open(
-    int width,
-    int height,
-    pixel_mode mode,
-    const char *title
-);
-
-bool screen_set_mode(
-    int width,
-    int height,
-    pixel_mode mode
-);
+bool screen_open(int width, int height, pixel_mode mode, const char *title);
+bool screen_set_mode(int width, int height, pixel_mode mode);
 
 void screen_close(void);
 bool should_close(void);
@@ -167,19 +153,8 @@ size_t framebuffer_size(void);
 void set_pixel(int x, int y, uint8_t index);
 uint8_t get_pixel(int x, int y);
 
-void set_palette(
-    int index,
-    uint8_t r,
-    uint8_t g,
-    uint8_t b
-);
-
-void get_palette(
-    int index,
-    uint8_t *r,
-    uint8_t *g,
-    uint8_t *b
-);
+void set_palette(int index, uint8_t r, uint8_t g, uint8_t b);
+void get_palette(int index, uint8_t *r, uint8_t *g, uint8_t *b);
 
 /* Load one of the built-in Pixelflow-compatible palettes by name. */
 bool use_palette(const char *name);
@@ -193,30 +168,13 @@ const char *palette_name(int index);
  * get_pixel_rgb() works in every mode; in pixel_indexed8 it resolves the
  * palette index to RGB. Out-of-bounds reads return false and write zeros.
  */
-void set_pixel_rgb(
-    int x,
-    int y,
-    uint8_t r,
-    uint8_t g,
-    uint8_t b
-);
+void set_pixel_rgb(int x, int y, uint8_t r, uint8_t g, uint8_t b);
+bool get_pixel_rgb(int x, int y, uint8_t *r, uint8_t *g, uint8_t *b);
 
-bool get_pixel_rgb(
-    int x,
-    int y,
-    uint8_t *r,
-    uint8_t *g,
-    uint8_t *b
-);
-
-static inline uint16_t rgb565_pack(
-    uint8_t r,
-    uint8_t g,
-    uint8_t b)
-{
+static inline uint16_t rgb565_pack(uint8_t r, uint8_t g, uint8_t b) {
     return (uint16_t)(
         ((uint16_t)(r >> 3) << 11) |
-        ((uint16_t)(g >> 2) << 5)  |
+        ((uint16_t)(g >> 2) << 5) |
         ((uint16_t)(b >> 3))
     );
 }

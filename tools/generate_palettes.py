@@ -64,15 +64,19 @@ def generate_c(palettes):
 
     for name, colors in palettes:
         ident = c_identifier(name)
-        out.append(f"static const PaletteColor {ident}[] =")
-        out.append("{")
-        for r, g, b in colors:
-            out.append(f"    {{ 0x{r:02x}, 0x{g:02x}, 0x{b:02x} }},")
+        out.append(f"static const PaletteColor {ident}[] = {{")
+
+        entries = [
+            f"{{ 0x{r:02x}, 0x{g:02x}, 0x{b:02x} }}"
+            for r, g, b in colors
+        ]
+        for i in range(0, len(entries), 4):
+            out.append("    " + ", ".join(entries[i:i + 4]) + ",")
+
         out.append("};")
         out.append("")
 
-    out.append("static const PaletteDefinition builtin_palettes[] =")
-    out.append("{")
+    out.append("static const PaletteDefinition builtin_palettes[] = {")
     for name, colors in palettes:
         ident = c_identifier(name)
         out.append(f'    {{ "{name}", {ident}, {len(colors)} }},')
