@@ -50,13 +50,23 @@ The frame-rate cap controls how often `present()` completes. Game logic that mus
 
 ## Build the examples
 
-PixelRAM currently uses raylib as its private platform backend. For a normal native build, install raylib including its development files and make sure `pkg-config raylib` works. Then:
+PixelRAM is designed for WebAssembly projects in Hackschule Workspace.
+The required Emscripten and raylib toolchain is already installed.
+
+Build all examples:
 
 ```sh
 make
-./build/minimal
-./build/fire
 ```
+
+The resulting HTML files are written to build/:
+
+```sh
+build/minimal.html
+build/fire.html
+```
+
+Each demo is a self-contained HTML file and can be opened directly from the Workspace.
 
 The Hackschule workspace already supplies the platform toolchain used by its PixelRAM projects, so student projects do not need to call raylib directly.
 
