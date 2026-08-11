@@ -140,18 +140,18 @@ def main():
     for name in ("pixelram.c", "pixelram.h", "shell.html"):
         shutil.copy2(project / name, target / name)
 
-    music_assets = project / ".descent-music"
+    music_assets = project / ".cache" / "descent-music"
     tsf_header = music_assets / "tsf.h"
     soundfont = music_assets / "TimGM6mb.sf2"
 
     if not tsf_header.exists():
         raise RuntimeError(
-            "Missing .descent-music/tsf.h; run make descent-music-assets"
+            "Missing .cache/descent-music/tsf.h; run make descent-music"
         )
 
     if not soundfont.exists():
         raise RuntimeError(
-            "Missing .descent-music/TimGM6mb.sf2; run make descent-music-assets"
+            "Missing .cache/descent-music/TimGM6mb.sf2; run make descent-music"
         )
 
     shutil.copy2(

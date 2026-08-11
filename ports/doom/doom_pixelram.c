@@ -7,7 +7,16 @@
  * DG_ScreenBuffer is therefore a real 320x200 array of palette indices.
  */
 
+/*
+ * doomgeneric already defines global variables named screen_width and
+ * screen_height. Rename PixelRAM's declarations locally while including
+ * pixelram.h so both APIs can coexist in this translation unit.
+ */
+#define screen_width  pixelram_screen_width
+#define screen_height pixelram_screen_height
 #include "pixelram.h"
+#undef screen_width
+#undef screen_height
 
 #include "doomgeneric.h"
 #include "doomkeys.h"
