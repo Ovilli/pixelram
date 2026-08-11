@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PixelRAM</title>
+<style>
+:root {
+    color-scheme: dark;
+    --pixel-aspect-ratio: 1;
+    --scanline-step: 3px;
+    --scanline-light-end: 2.1px;
+    --scanline-dark-start: 2.46px;
+}
+* { box-sizing: border-box; }
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #050607;
+}
+body {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                 "Liberation Mono", monospace;
+}
+#stage {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 45%, #15191e 0, #090b0e 45%, #030405 100%);
+}
+#screen-frame {
+    position: relative;
+    flex: 0 0 auto;
+    overflow: hidden;
+    background: #000;
+    line-height: 0;
+}
+#canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: 0;
+    outline: 0;
+    image-rendering: pixelated;
+    background: #000;
+}
+#scanlines, #vignette, #glass {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+}
+#scanlines {
+    z-index: 2;
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 0,
+        rgba(0,0,0,0) var(--scanline-light-end),
+        rgba(0,0,0,.18) var(--scanline-dark-start),
+        rgba(0,0,0,.42) var(--scanline-step)
+    );
+    mix-blend-mode: multiply;
+}
+#vignette {
+    z-index: 3;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(0,0,0,0) 52%,
+        rgba(0,0,0,.14) 73%,
+        rgba(0,0,0,.48) 100%
+    );
+}
+#glass {
+    z-index: 4;
+    background: linear-gradient(
+        116deg,
+        rgba(255,255,255,.035) 0%,
+        rgba(255,255,255,.012) 18%,
+        rgba(255,255,255,0) 42%
+    );
+}
+body.crt #screen-frame {
+    border-radius: 3.4% / 4.5%;
+    box-shadow:
+        0 18px 60px rgba(0,0,0,.55),
+        0 0 30px rgba(125,190,255,.055),
+        inset 0 0 26px rgba(255,255,255,.018);
+    transform: perspective(1100px) scale(.994);
+}
+body.crt #canvas {
+    filter: url(#crt-rgb) saturate(1.06) contrast(1.055) brightness(.985);
+}
+body.crt #scanlines,
+body.crt #vignette,
+body.crt #glass { opacity: 1; }
+
+#console-panel {
+    position: fixed;
+    z-index: 20;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: min(38vh, 360px);
+    display: none;
+    flex-direction: column;
+    border-top: 1px solid rgba(255,255,255,.12);
+    background: rgba(5,7,9,.965);
+    color: #d7dde5;
+    box-shadow: 0 -16px 50px rgba(0,0,0,.45);
+    user-select: text;
+}
+#console-panel.open { display: flex; }
+#console-header {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    color: #8994a3;
+    font-size: 12px;
+    user-select: none;
+}
+#console-title { color: #d7dde5; font-weight: 600; }
+#console-header .spacer { flex: 1; }
+#console-header button {
+    appearance: none;
+    border: 0;
+    padding: 2px 5px;
+    background: transparent;
+    color: #8994a3;
+    font: inherit;
+    cursor: pointer;
+}
+#console-header button:hover { color: #fff; }
+#log-output {
+    flex: 1 1 auto;
+    overflow: auto;
+    margin: 0;
+    padding: 10px 12px 16px;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.log-line.stderr { color: #ff9b9b; }
+.log-line.warn { color: #ffd48a; }
+
+#toast {
+    position: fixed;
+    z-index: 30;
+    top: 16px;
+    right: 16px;
+    padding: 7px 10px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 5px;
+    background: rgba(5,7,9,.82);
+    color: #d7dde5;
+    font-size: 12px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 120ms ease, transform 120ms ease;
+    pointer-events: none;
+}
+#toast.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+<div id="stage">
+    <div id="screen-frame">
+        <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+        <div id="scanlines"></div>
+        <div id="vignette"></div>
+        <div id="glass"></div>
+    </div>
+</div>
+
+<div id="console-panel" aria-hidden="true">
+    <div id="console-header">
+        <span id="console-title">PixelRAM log</span>
+        <span>` close</span>
+        <span class="spacer"></span>
+        <button id="clear-log" type="button">clear</button>
+    </div>
+    <div id="log-output" role="log" aria-live="off"></div>
+</div>
+
+<div id="toast"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="crt-rgb" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+        <feOffset id="crt-red-offset" in="SourceGraphic" dx="-0.55" dy="0" result="red-shift"/>
+        <feColorMatrix in="red-shift" type="matrix" values="
+            1 0 0 0 0
+            0 0 0 0 0
+            0 0 0 0 0
+            0 0 0 1 0" result="red"/>
+        <feColorMatrix in="SourceGraphic" type="matrix" values="
+            0 0 0 0 0
+            0 1 0 0 0
+            0 0 0 0 0
+            0 0 0 1 0" result="green"/>
+        <feOffset id="crt-blue-offset" in="SourceGraphic" dx="0.55" dy="0" result="blue-shift"/>
+        <feColorMatrix in="blue-shift" type="matrix" values="
+            0 0 0 0 0
+            0 0 0 0 0
+            0 0 1 0 0
+            0 0 0 1 0" result="blue"/>
+        <feBlend in="red" in2="green" mode="screen" result="red-green"/>
+        <feBlend in="red-green" in2="blue" mode="screen"/>
+    </filter>
+</svg>
+
+<script>
+var Module;
+
+(() => {
+    'use strict';
+
+    const root = document.documentElement;
+    const body = document.body;
+    const stage = document.getElementById('stage');
+    const frame = document.getElementById('screen-frame');
+    const canvas = document.getElementById('canvas');
+    const consolePanel = document.getElementById('console-panel');
+    const logOutput = document.getElementById('log-output');
+    const clearLog = document.getElementById('clear-log');
+    const toast = document.getElementById('toast');
+    const redOffset = document.getElementById('crt-red-offset');
+    const blueOffset = document.getElementById('crt-blue-offset');
+
+    const nativeConsole = {
+        log: console.log.bind(console),
+        warn: console.warn.bind(console),
+        error: console.error.bind(console)
+    };
+
+    const MAX_LOG_LINES = 2000;
+    let toastTimer = 0;
+
+    function formatArg(value) {
+        if (typeof value === 'string') return value;
+        if (value instanceof Error) return value.stack || value.message;
+        try {
+            const json = JSON.stringify(value);
+            return json === undefined ? String(value) : json;
+        } catch (_) {
+            return String(value);
+        }
+    }
+
+    function appendLog(kind, args) {
+        const wasNearBottom =
+            logOutput.scrollHeight - logOutput.scrollTop - logOutput.clientHeight < 48;
+
+        const line = document.createElement('div');
+        line.className = `log-line ${kind}`;
+        line.textContent = args.map(formatArg).join(' ');
+        logOutput.appendChild(line);
+
+        while (logOutput.childElementCount > MAX_LOG_LINES)
+            logOutput.removeChild(logOutput.firstElementChild);
+
+        if (wasNearBottom || consolePanel.dataset.autoscroll !== '0')
+            logOutput.scrollTop = logOutput.scrollHeight;
+    }
+
+    console.log = (...args) => {
+        nativeConsole.log(...args);
+        appendLog('stdout', args);
+    };
+    console.warn = (...args) => {
+        nativeConsole.warn(...args);
+        appendLog('warn', args);
+    };
+    console.error = (...args) => {
+        nativeConsole.error(...args);
+        appendLog('stderr', args);
+    };
+
+    logOutput.addEventListener('scroll', () => {
+        const distance =
+            logOutput.scrollHeight - logOutput.scrollTop - logOutput.clientHeight;
+        consolePanel.dataset.autoscroll = distance < 48 ? '1' : '0';
+    });
+
+    clearLog.addEventListener('click', () => {
+        logOutput.textContent = '';
+        consolePanel.dataset.autoscroll = '1';
+        canvas.focus({preventScroll: true});
+    });
+
+    function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('visible'), 850);
+    }
+
+    function currentPixelAspect() {
+        const value = parseFloat(
+            getComputedStyle(root).getPropertyValue('--pixel-aspect-ratio')
+        );
+        return Number.isFinite(value) && value > 0 ? value : 1;
+    }
+
+    function layoutScreen() {
+        const width = Math.max(1, canvas.width || 320);
+        const height = Math.max(1, canvas.height || 200);
+        const pixelAspect = currentPixelAspect();
+        const targetAspect = (width * pixelAspect) / height;
+
+        const stageRect = stage.getBoundingClientRect();
+        const availableWidth = Math.max(80, stageRect.width - 32);
+        const availableHeight = Math.max(60, stageRect.height - 32);
+
+        let cssWidth = availableWidth;
+        let cssHeight = cssWidth / targetAspect;
+
+        if (cssHeight > availableHeight) {
+            cssHeight = availableHeight;
+            cssWidth = cssHeight * targetAspect;
+        }
+
+        cssWidth = Math.max(1, Math.floor(cssWidth));
+        cssHeight = Math.max(1, Math.floor(cssHeight));
+
+        frame.style.width = `${cssWidth}px`;
+        frame.style.height = `${cssHeight}px`;
+
+        // One scanline period for every logical framebuffer row.
+        // Example: 320x200 shown 600 CSS px high -> 3 px per row.
+        const scanlineStep = cssHeight / height;
+        root.style.setProperty('--scanline-step', `${scanlineStep}px`);
+        root.style.setProperty('--scanline-light-end', `${scanlineStep * .70}px`);
+        root.style.setProperty('--scanline-dark-start', `${scanlineStep * .82}px`);
+
+        // Keep RGB separation subtle and proportional to a displayed source pixel.
+        const displayedPixelWidth = cssWidth / width;
+        const chromaShift =
+            Math.min(1.15, Math.max(.35, displayedPixelWidth * .16));
+        redOffset.setAttribute('dx', String(-chromaShift));
+        blueOffset.setAttribute('dx', String(chromaShift));
+    }
+
+    function setConsoleOpen(open) {
+        consolePanel.classList.toggle('open', open);
+        consolePanel.setAttribute('aria-hidden', open ? 'false' : 'true');
+        stage.style.bottom = open ? `${consolePanel.offsetHeight}px` : '0';
+        requestAnimationFrame(layoutScreen);
+        canvas.focus({preventScroll: true});
+    }
+
+    function toggleConsole() {
+        setConsoleOpen(!consolePanel.classList.contains('open'));
+    }
+
+    function toggleCrt() {
+        const enabled = !body.classList.contains('crt');
+        body.classList.toggle('crt', enabled);
+        showToast(enabled ? 'CRT ON' : 'CRT OFF');
+        canvas.focus({preventScroll: true});
+    }
+
+    // Shell shortcuts are captured before raylib receives them.
+    window.addEventListener('keydown', event => {
+        if (event.repeat) return;
+
+        if (event.code === 'Backquote') {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            toggleConsole();
+            return;
+        }
+
+        if (event.code === 'F6') {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            toggleCrt();
+        }
+    }, true);
+
+    window.addEventListener('resize', layoutScreen);
+
+    new MutationObserver(layoutScreen).observe(canvas, {
+        attributes: true,
+        attributeFilter: ['width', 'height']
+    });
+
+    window.addEventListener('error', event => {
+        if (event.message) appendLog('stderr', [event.message]);
+    });
+
+    window.addEventListener('unhandledrejection', event => {
+        appendLog('stderr', ['Unhandled promise rejection:', event.reason]);
+    });
+
+    consolePanel.dataset.autoscroll = '1';
+    layoutScreen();
+    requestAnimationFrame(() => canvas.focus({preventScroll: true}));
+
+    Module = {
+        canvas,
+        print: text => console.log(text),
+        printErr: text => console.error(text)
+    };
+})();
+</script>
+
+{{{ SCRIPT }}}
+</body>
+</html>

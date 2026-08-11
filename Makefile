@@ -6,12 +6,14 @@ CFLAGS := -O2 -std=c11 -Wall -Wextra -Wpedantic
 BUILD_DIR := build
 EXAMPLES := minimal fire
 HTML := $(EXAMPLES:%=$(BUILD_DIR)/%.html)
+SHELL_FILE := shell.html
 
 WEB_FLAGS := \
 	-DPLATFORM_WEB \
 	-sUSE_GLFW=3 \
 	-sASYNCIFY \
-	-sSINGLE_FILE=1
+	-sSINGLE_FILE=1 \
+	--shell-file $(SHELL_FILE)
 
 .PHONY: all clean palettes test $(EXAMPLES)
 
@@ -25,7 +27,7 @@ $(EXAMPLES): %: $(BUILD_DIR)/%.html
 $(BUILD_DIR):
 	mkdir -p $@
 
-$(BUILD_DIR)/%.html: examples/%.c pixelram.c pixelram.h | $(BUILD_DIR)
+$(BUILD_DIR)/%.html: examples/%.c pixelram.c pixelram.h $(SHELL_FILE) | $(BUILD_DIR)
 	$(EMCC) $(CFLAGS) $(WEB_FLAGS) -I. \
 		$< pixelram.c \
 		-lraylib \
