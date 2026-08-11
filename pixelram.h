@@ -11,8 +11,8 @@ extern "C" {
 
 #define PIXELRAM_VERSION_MAJOR 0
 #define PIXELRAM_VERSION_MINOR 1
-#define PIXELRAM_VERSION_PATCH 1
-#define PIXELRAM_VERSION "0.1.1"
+#define PIXELRAM_VERSION_PATCH 2
+#define PIXELRAM_VERSION "0.1.2"
 
 /*
  * PixelRAM is a small software framebuffer API.
