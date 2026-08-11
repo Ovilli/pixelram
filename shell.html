@@ -19,12 +19,12 @@ body.crt #crt-canvas { opacity:1; }
 body.crt #screen-frame { box-shadow:0 18px 65px rgba(0,0,0,.62), 0 0 34px rgba(105,175,230,.045); }
 #console-panel { position:fixed; z-index:50; top:0; left:0; right:0; height:min(43vh,390px); display:flex; flex-direction:column; background:linear-gradient(rgba(8,10,11,.965), rgba(3,4,5,.955)); border-bottom:1px solid rgba(255,255,255,.14); box-shadow:0 18px 55px rgba(0,0,0,.55); transform:translateY(calc(-100% - 2px)); transition:transform 160ms cubic-bezier(.22,.78,.25,1); user-select:text; }
 #console-panel.open { transform:translateY(0); }
-#console-header { flex:0 0 auto; height:30px; display:flex; align-items:center; gap:12px; padding:0 12px; border-bottom:1px solid rgba(255,255,255,.07); color:#8994a3; font-size:11px; user-select:none; }
+#console-header { flex:0 0 auto; height:22px; display:flex; align-items:center; padding:0 10px; color:#8994a3; font-size:11px; user-select:none; }
 #console-title { color:#dfe5ec; font-weight:600; }
 #console-header .spacer { flex:1; }
 #console-header button { appearance:none; border:0; padding:2px 5px; background:transparent; color:#8994a3; font:inherit; cursor:pointer; }
 #console-header button:hover { color:#fff; }
-#log-output { flex:1 1 auto; overflow:auto; margin:0; padding:10px 13px 18px; color:#d4d9df; font-size:12px; line-height:1.42; white-space:pre-wrap; word-break:break-word; text-shadow:0 0 5px rgba(205,225,205,.08); }
+#log-output { flex:1 1 auto; overflow:auto; margin:0; padding:2px 16px 20px; color:#d4d9df; font-size:15px; line-height:1.48; white-space:pre-wrap; word-break:break-word; text-shadow:0 0 5px rgba(205,225,205,.08); }
 .log-line.stderr { color:#ff9b9b; }
 .log-line.warn { color:#ffd48a; }
 #console-grip { flex:0 0 auto; height:4px; background:linear-gradient(to right, transparent 0, rgba(255,255,255,.08) 35%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.08) 65%, transparent 100%); }
@@ -34,7 +34,7 @@ body.crt #screen-frame { box-shadow:0 18px 65px rgba(0,0,0,.62), 0 0 34px rgba(1
 </head>
 <body>
 <div id="stage"><div id="screen-frame"><canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas><canvas id="crt-canvas"></canvas></div></div>
-<div id="console-panel" aria-hidden="true"><div id="console-header"><span id="console-title">PixelRAM</span><span>` console</span><span>F6 CRT</span><span class="spacer"></span><button id="clear-log" type="button">clear</button></div><div id="log-output" role="log" aria-live="off"></div><div id="console-grip"></div></div>
+<div id="console-panel" aria-hidden="true"><div id="console-header"><span class="spacer"></span><button id="clear-log" type="button">clear</button></div><div id="log-output" role="log" aria-live="off"></div><div id="console-grip"></div></div>
 <div id="toast"></div>
 <script>
 var Module;
@@ -42,10 +42,15 @@ var Module;
 'use strict';
 const root=document.documentElement, body=document.body, stage=document.getElementById('stage'), frame=document.getElementById('screen-frame'), canvas=document.getElementById('canvas'), crtCanvas=document.getElementById('crt-canvas'), consolePanel=document.getElementById('console-panel'), logOutput=document.getElementById('log-output'), clearLog=document.getElementById('clear-log'), toast=document.getElementById('toast');
 const nativeConsole={log:console.log.bind(console),warn:console.warn.bind(console),error:console.error.bind(console)};
-const MAX_LOG_LINES=2000; let toastTimer=0, crtEnabled=false;
+const MAX_LOG_LINES=2000;
+const HIDDEN_RUNTIME_MESSAGES=[
+  'WARNING: GL: NPOT textures extension not found, limited NPOT support (no-mipmaps, no-repeat)'
+];
+let toastTimer=0, crtEnabled=false;
+function hiddenRuntimeMessage(args){const text=args.map(formatArg).join(' ').trim();return HIDDEN_RUNTIME_MESSAGES.includes(text)}
 function formatArg(v){if(typeof v==='string')return v;if(v instanceof Error)return v.stack||v.message;try{const j=JSON.stringify(v);return j===undefined?String(v):j}catch(_){return String(v)}}
 function appendLog(kind,args){const near=logOutput.scrollHeight-logOutput.scrollTop-logOutput.clientHeight<48;const line=document.createElement('div');line.className=`log-line ${kind}`;line.textContent=args.map(formatArg).join(' ');logOutput.appendChild(line);while(logOutput.childElementCount>MAX_LOG_LINES)logOutput.removeChild(logOutput.firstElementChild);if(near||consolePanel.dataset.autoscroll!=='0')logOutput.scrollTop=logOutput.scrollHeight}
-console.log=(...a)=>{nativeConsole.log(...a);appendLog('stdout',a)};console.warn=(...a)=>{nativeConsole.warn(...a);appendLog('warn',a)};console.error=(...a)=>{nativeConsole.error(...a);appendLog('stderr',a)};
+console.log=(...a)=>{if(hiddenRuntimeMessage(a))return;nativeConsole.log(...a);appendLog('stdout',a)};console.warn=(...a)=>{if(hiddenRuntimeMessage(a))return;nativeConsole.warn(...a);appendLog('warn',a)};console.error=(...a)=>{if(hiddenRuntimeMessage(a))return;nativeConsole.error(...a);appendLog('stderr',a)};
 logOutput.addEventListener('scroll',()=>{const d=logOutput.scrollHeight-logOutput.scrollTop-logOutput.clientHeight;consolePanel.dataset.autoscroll=d<48?'1':'0'});
 clearLog.addEventListener('click',()=>{logOutput.textContent='';consolePanel.dataset.autoscroll='1';canvas.focus({preventScroll:true})});
 function showToast(m){toast.textContent=m;toast.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('visible'),800)}
@@ -80,6 +85,17 @@ void main(){vec2 pos=warpUv(vUv);if(pos.x<0.0||pos.y<0.0||pos.x>1.0||pos.y>1.0){
  return{available:true,resize,draw};
 })();
 function crtLoop(){if(crtEnabled)crtRenderer.draw();requestAnimationFrame(crtLoop)}
+function resumeBrowserAudio(){
+ const contexts=[];
+ const add=c=>{if(c&&typeof c.resume==='function'&&!contexts.includes(c))contexts.push(c)};
+ try{add(window.SDL2&&window.SDL2.audioContext)}catch(_){}
+ try{add(Module&&Module.SDL2&&Module.SDL2.audioContext)}catch(_){}
+ try{add(window.AL&&window.AL.currentCtx&&window.AL.currentCtx.audioCtx)}catch(_){}
+ try{add(Module&&Module.AL&&Module.AL.currentCtx&&Module.AL.currentCtx.audioCtx)}catch(_){}
+ for(const c of contexts)if(c.state==='suspended')c.resume().catch(()=>{});
+}
+window.addEventListener('pointerdown',resumeBrowserAudio,{capture:true});
+window.addEventListener('keydown',resumeBrowserAudio,{capture:true});
 window.addEventListener('keydown',e=>{if(e.repeat)return;if(e.code==='Backquote'){e.preventDefault();e.stopImmediatePropagation();toggleConsole();return}if(e.code==='F6'){e.preventDefault();e.stopImmediatePropagation();toggleCrt()}},true);
 window.addEventListener('resize',layoutScreen);new MutationObserver(layoutScreen).observe(canvas,{attributes:true,attributeFilter:['width','height']});window.addEventListener('error',e=>{if(e.message)appendLog('stderr',[e.message])});window.addEventListener('unhandledrejection',e=>appendLog('stderr',['Unhandled promise rejection:',e.reason]));
 consolePanel.dataset.autoscroll='1';layoutScreen();requestAnimationFrame(crtLoop);requestAnimationFrame(()=>canvas.focus({preventScroll:true}));
