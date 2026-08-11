@@ -1,39 +1,18 @@
-# Prince of Persia / SDLPoP first pass
+Prince CRT logical-resolution fix
 
-This is intentionally the first milestone rather than the final PixelRAM
-backend.
+SDLPoP draws Prince of Persia at 320x200, while SDL/Emscripten can give the
+HTML canvas a much larger backing resolution. The PixelRAM CRT shader used to
+mistake that enlarged canvas for the original raster, which produced far too
+many scanlines and visible moire/dark rings.
 
-`make prince`:
+This patch:
+- teaches shell.html about an optional logical framebuffer size;
+- makes the CRT shader use that logical size for Gaussian pixel/scanline
+  reconstruction;
+- tells the Prince port explicitly that its logical raster is 320x200.
 
-1. clones a pinned SDLPoP revision,
-2. builds its existing software-rendered SDL2 code with Emscripten,
-3. uses the same PixelRAM web shell as the other demos,
-4. packages SDLPoP's upstream `data/` directory into `prince.data`.
-
-No original game files need to be placed beside the Makefile for this test,
-because the pinned SDLPoP repository itself contains the data resources used
-by the port.
-
-Run:
+Rebuild with:
 
     make prince
 
-Then open:
-
-    build/prince.html
-
-Expected generated files:
-
-    build/prince.html
-    build/prince.js
-    build/prince.wasm
-    build/prince.data
-
-Why do this before the PixelRAM backend?
-----------------------------------------
-
-SDLPoP already performs the original game's software drawing into SDL
-surfaces. If this first browser build runs correctly, the next patch can be
-very small and focused: present the final 320x200 software surface through
-PixelRAM and translate input through PixelRAM, while leaving the game's
-drawing/resource/audio code untouched.
+No SDLPoP source modification is required for this fix.

@@ -290,6 +290,7 @@ prince: prince-source | $(BUILD_DIR)
 		-sASYNCIFY \
 		-sALLOW_MEMORY_GROWTH=1 \
 		-sFORCE_FILESYSTEM \
+		--pre-js ports/prince/prince_web.js \
 		--shell-file "$(SHELL_FILE)" \
 		-I"$(PRINCE_SRC)" \
 		$(PRINCE_SOURCES) \
