@@ -258,12 +258,10 @@ if (EMSCRIPTEN)
         "SHELL:-sASSERTIONS=1"
         "SHELL:-sSTACK_OVERFLOW_CHECK=1"
         "SHELL:-sFORCE_FILESYSTEM"
-        "SHELL:-sSINGLE_FILE=1"
-        "SHELL:-sSINGLE_FILE_BINARY_ENCODE=0"
         "SHELL:--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/platform/pixelram/shell.html"
-        "SHELL:--embed-file ${CMAKE_CURRENT_SOURCE_DIR}/descent.hog@/descent.hog"
-        "SHELL:--embed-file ${CMAKE_CURRENT_SOURCE_DIR}/descent.pig@/descent.pig"
-        "SHELL:--embed-file ${CMAKE_CURRENT_SOURCE_DIR}/TimGM6mb.sf2@/TimGM6mb.sf2"
+        "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/descent.hog@/descent.hog"
+        "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/descent.pig@/descent.pig"
+        "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/TimGM6mb.sf2@/TimGM6mb.sf2"
     )
 
     set_target_properties(

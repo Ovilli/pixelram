@@ -199,6 +199,8 @@ descent-source: descent-music | $(CACHE_DIR)
 		git clone "$(DESCENT_REPO)" "$(DESCENT_ROOT)"; \
 	fi
 	@git -C "$(DESCENT_ROOT)" checkout -q --detach "$(DESCENT_COMMIT)"
+	@git -C "$(DESCENT_ROOT)" reset -q --hard "$(DESCENT_COMMIT)"
+	@git -C "$(DESCENT_ROOT)" clean -q -fdx
 	python3 ports/descent/prepare.py "$(DESCENT_ROOT)" "."
 	@echo "Chocolate Descent source ready."
 
@@ -235,12 +237,16 @@ descent: descent-source descent-data | $(BUILD_DIR)
 	cmake --build "$(DESCENT_BUILD)" \
 		--target ChocolateDescent \
 		-j"$$(nproc)"
-	cp "$(DESCENT_BUILD)/descent.html" "$(BUILD_DIR)/descent.html"
+	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data
+	cp "$(DESCENT_BUILD)"/descent.html "$(BUILD_DIR)/"
+	@if [ -f "$(DESCENT_BUILD)/descent.js" ]; then cp "$(DESCENT_BUILD)/descent.js" "$(BUILD_DIR)/"; fi
+	@if [ -f "$(DESCENT_BUILD)/descent.wasm" ]; then cp "$(DESCENT_BUILD)/descent.wasm" "$(BUILD_DIR)/"; fi
+	@if [ -f "$(DESCENT_BUILD)/descent.data" ]; then cp "$(DESCENT_BUILD)/descent.data" "$(BUILD_DIR)/"; fi
 	@echo
 	@echo "Ready: $(BUILD_DIR)/descent.html"
 
 clean-descent:
-	rm -f "$(BUILD_DIR)/descent.html"
+	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data
 	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)"
 
 clean:
