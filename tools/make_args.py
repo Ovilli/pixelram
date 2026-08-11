@@ -14,16 +14,30 @@ script = f"""
 (function() {{
   var defaults = {js_defaults};
 
-  function urlArgs() {{
-    try {{
-      return new URLSearchParams(location.search).getAll('arg');
-    }} catch (_) {{
-      return [];
-    }}
+  function storageKey() {{
+    return 'pixelram-args:' + location.pathname;
   }}
 
-  var fromUrl = urlArgs();
-  var args = fromUrl.length ? fromUrl : defaults;
+  var args = defaults.slice();
+
+  try {{
+    var stored = sessionStorage.getItem(storageKey());
+
+    if (stored !== null) {{
+      /*
+       * A console Run/Enter override is intentionally one-shot:
+       * consume it for this startup and remove it immediately.
+       */
+      sessionStorage.removeItem(storageKey());
+
+      var parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {{
+        args = parsed.map(String);
+      }}
+    }}
+  }} catch (_) {{
+    /* If sessionStorage is unavailable, simply use Makefile defaults. */
+  }}
 
   Module = Module || {{}};
   Module.arguments = args.slice();

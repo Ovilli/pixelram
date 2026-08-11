@@ -73,7 +73,7 @@ refreshArgsInput();
 window.addEventListener('pixelram-args-ready',refreshArgsInput);
 
 function runArgs(){
- setUrlArgs(splitArgs(argsInput.value))
+ runWithArgs(splitArgs(argsInput.value))
 }
 argsRun.addEventListener('click',runArgs);
 argsInput.addEventListener('keydown',e=>{
@@ -120,24 +120,19 @@ function quoteArg(arg){
  if(!/[\s"'\\]/.test(arg))return arg;
  return '"' + arg.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"'
 }
-function argsFromUrl(){
- const params=new URLSearchParams(location.search);
- return params.getAll('arg')
-}
 function activeArgs(){
- const url=argsFromUrl();
- if(url.length)return url;
  if(window.Module && Array.isArray(window.Module.arguments))
    return window.Module.arguments.map(String);
  if(Array.isArray(window.PIXELRAM_ARGS))
    return window.PIXELRAM_ARGS.map(String);
  return []
 }
-function setUrlArgs(args){
- const url=new URL(location.href);
- url.searchParams.delete('arg');
- for(const arg of args)url.searchParams.append('arg',arg);
- location.href=url.toString()
+function argsStorageKey(){
+ return 'pixelram-args:' + location.pathname
+}
+function runWithArgs(args){
+ sessionStorage.setItem(argsStorageKey(),JSON.stringify(args));
+ location.reload()
 }
 
 function toggleConsole(){const open=!consolePanel.classList.contains('open');consolePanel.classList.toggle('open',open);consolePanel.setAttribute('aria-hidden',open?'false':'true');if(open)requestAnimationFrame(()=>{logOutput.scrollTop=logOutput.scrollHeight});canvas.focus({preventScroll:true})}
