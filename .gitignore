@@ -1,4 +1,13 @@
 /build/
+/.cache/
 *.o
 *.swp
 .DS_Store
+
+# Commercial/shareware game data is deliberately not part of PixelRAM.
+doom1.wad
+DOOM1.WAD
+descent.hog
+descent.pig
+DESCENT.HOG
+DESCENT.PIG
