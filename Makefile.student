@@ -1,0 +1,38 @@
+EMCC := emcc
+
+PROGRAM := main
+ARGS :=
+
+CFLAGS := -O2 -std=c11 -Wall -Wextra -Wpedantic
+
+BUILD_DIR := .build
+ARGS_JS := $(BUILD_DIR)/pixelram_args.js
+
+WEB_FLAGS := \
+	-DPLATFORM_WEB \
+	-sUSE_GLFW=3 \
+	-sASYNCIFY \
+	-sFORCE_FILESYSTEM \
+	-sSINGLE_FILE=1 \
+	-sSINGLE_FILE_BINARY_ENCODE=0 \
+	--pre-js $(ARGS_JS) \
+	--shell-file shell.html
+
+.PHONY: all clean
+
+all: $(PROGRAM).html
+
+$(BUILD_DIR):
+	mkdir -p $@
+
+$(ARGS_JS): Makefile tools/make_args.py | $(BUILD_DIR)
+	python3 tools/make_args.py $@ $(ARGS)
+
+$(PROGRAM).html: $(PROGRAM).c pixelram.c pixelram.h shell.html $(ARGS_JS)
+	$(EMCC) $(CFLAGS) $(WEB_FLAGS) \
+		$(PROGRAM).c pixelram.c \
+		-lraylib \
+		-o $@
+
+clean:
+	rm -rf $(BUILD_DIR) $(PROGRAM).html
