@@ -65,6 +65,103 @@ EM_JS(void, pixelram_install_web_handlers, (), {
     canvas.dataset.pixelramRelativeMouse = "0";
     canvas.dataset.pixelramFullscreen = "0";
 
+    /*
+     * raylib's normal browser mouse handling is canvas-oriented. That is
+     * fine until a drag leaves the canvas: a mouseup outside can be missed,
+     * leaving a polled button stuck down.
+     *
+     * PixelRAM therefore owns absolute mouse state on the web. A drag that
+     * starts on the canvas remains tracked at window level until every
+     * button from that drag has been released.
+     */
+    let trackedMouseButtons = 0;
+
+    function pixelramMouseButton(button) {
+        if (button === 0) return 0; /* left   */
+        if (button === 2) return 1; /* right  */
+        if (button === 1) return 2; /* middle */
+        return -1;
+    }
+
+    function browserButtonDown(buttons, pixelramButton) {
+        if (pixelramButton === 0) return (buttons & 1) !== 0;
+        if (pixelramButton === 1) return (buttons & 2) !== 0;
+        if (pixelramButton === 2) return (buttons & 4) !== 0;
+        return false;
+    }
+
+    function updateAbsoluteMouse(event) {
+        if (canvas.dataset.pixelramRelativeMouse === "1" &&
+            document.pointerLockElement === canvas)
+            return;
+
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0)
+            return;
+
+        const x = Math.floor(
+            (event.clientX - rect.left) * canvas.width / rect.width
+        );
+        const y = Math.floor(
+            (event.clientY - rect.top) * canvas.height / rect.height
+        );
+
+        Module._pixelram_web_mouse_position(x, y);
+    }
+
+    canvas.addEventListener("mousemove", event => {
+        updateAbsoluteMouse(event);
+    });
+
+    canvas.addEventListener("mousedown", event => {
+        const button = pixelramMouseButton(event.button);
+        if (button < 0)
+            return;
+
+        updateAbsoluteMouse(event);
+        trackedMouseButtons |= 1 << button;
+        Module._pixelram_web_mouse_button(button, 1);
+    });
+
+    window.addEventListener("mousemove", event => {
+        if (!trackedMouseButtons)
+            return;
+
+        updateAbsoluteMouse(event);
+
+        for (let button = 0; button < 3; button++) {
+            const mask = 1 << button;
+            if ((trackedMouseButtons & mask) &&
+                !browserButtonDown(event.buttons, button)) {
+                trackedMouseButtons &= ~mask;
+                Module._pixelram_web_mouse_button(button, 0);
+            }
+        }
+    });
+
+    window.addEventListener("mouseup", event => {
+        const button = pixelramMouseButton(event.button);
+        if (button < 0)
+            return;
+
+        const mask = 1 << button;
+        if (!(trackedMouseButtons & mask))
+            return;
+
+        updateAbsoluteMouse(event);
+        trackedMouseButtons &= ~mask;
+        Module._pixelram_web_mouse_button(button, 0);
+    });
+
+    window.addEventListener("blur", () => {
+        for (let button = 0; button < 3; button++) {
+            const mask = 1 << button;
+            if (trackedMouseButtons & mask)
+                Module._pixelram_web_mouse_button(button, 0);
+        }
+        trackedMouseButtons = 0;
+    });
+
     canvas.addEventListener("click", async () => {
         if (canvas.dataset.pixelramFullscreen === "1" && !document.fullscreenElement) {
             try {
@@ -1198,14 +1295,54 @@ typedef struct {
      */
     bool key_pressed_frame[PIXELRAM_KEY_STATE_SIZE];
     bool key_released_frame[PIXELRAM_KEY_STATE_SIZE];
+
+    unsigned int mouse_pressed_frame;
+    unsigned int mouse_released_frame;
 } PixelRAM_State;
 
 static PixelRAM_State pr = {0};
 
 #ifdef PLATFORM_WEB
 
+static int web_mouse_x = 0;
+static int web_mouse_y = 0;
 static int web_mouse_dx = 0;
 static int web_mouse_dy = 0;
+static bool web_mouse_position_valid = false;
+
+static unsigned int web_mouse_buttons_down = 0;
+static unsigned int web_mouse_pressed_pending = 0;
+static unsigned int web_mouse_released_pending = 0;
+
+EMSCRIPTEN_KEEPALIVE
+void pixelram_web_mouse_position(int x, int y) {
+    if (web_mouse_position_valid && !pr.mouse_relative) {
+        web_mouse_dx += x - web_mouse_x;
+        web_mouse_dy += y - web_mouse_y;
+    }
+
+    web_mouse_x = x;
+    web_mouse_y = y;
+    web_mouse_position_valid = true;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void pixelram_web_mouse_button(int button, int down) {
+    if (button < 0 || button >= 3)
+        return;
+
+    unsigned int mask = 1u << (unsigned int)button;
+
+    if (down) {
+        if (!(web_mouse_buttons_down & mask))
+            web_mouse_pressed_pending |= mask;
+        web_mouse_buttons_down |= mask;
+    } else {
+        if (web_mouse_buttons_down & mask)
+            web_mouse_released_pending |= mask;
+        web_mouse_buttons_down &= ~mask;
+    }
+}
 
 /* Called by the small JavaScript bridge above while pointer lock is active. */
 EMSCRIPTEN_KEEPALIVE
@@ -1419,6 +1556,16 @@ static void pump_key_events(void) {
     }
 }
 
+#ifdef PLATFORM_WEB
+static void pump_mouse_events(void) {
+    pr.mouse_pressed_frame = web_mouse_pressed_pending;
+    pr.mouse_released_frame = web_mouse_released_pending;
+
+    web_mouse_pressed_pending = 0;
+    web_mouse_released_pending = 0;
+}
+#endif
+
 static void make_default_palette(void) {
     (void)use_palette("vga");
 }
@@ -1484,8 +1631,16 @@ bool screen_open(int width, int height, pixel_mode mode, const char *title) {
     pr.mouse_relative = false;
 
 #ifdef PLATFORM_WEB
+    web_mouse_x = 0;
+    web_mouse_y = 0;
     web_mouse_dx = 0;
     web_mouse_dy = 0;
+    web_mouse_position_valid = false;
+    web_mouse_buttons_down = 0;
+    web_mouse_pressed_pending = 0;
+    web_mouse_released_pending = 0;
+    pr.mouse_pressed_frame = 0;
+    pr.mouse_released_frame = 0;
 #endif
 
     set_pixel_aspect(1.0f);
@@ -1792,6 +1947,9 @@ void present(void) {
      * DOOM consumes the queued events on the following game tick.
      */
     pump_key_events();
+#ifdef PLATFORM_WEB
+    pump_mouse_events();
+#endif
     framebuffer_to_rgba();
 
 #ifdef PLATFORM_WEB
@@ -1883,6 +2041,7 @@ bool poll_key_event(pixel_key_event *event) {
     return true;
 }
 
+#ifndef PLATFORM_WEB
 static int raylib_mouse_button(pixel_mouse_button button) {
     switch (button) {
         case pixel_mouse_left:
@@ -1895,8 +2054,19 @@ static int raylib_mouse_button(pixel_mouse_button button) {
             return -1;
     }
 }
+#endif
 
 void mouse_position(int *x, int *y) {
+#ifdef PLATFORM_WEB
+    if (web_mouse_position_valid) {
+        if (x)
+            *x = web_mouse_x;
+        if (y)
+            *y = web_mouse_y;
+        return;
+    }
+#endif
+
     Vector2 p = GetMousePosition();
     if (x)
         *x = (int)p.x;
@@ -1907,27 +2077,23 @@ void mouse_position(int *x, int *y) {
 
 void mouse_delta(int *dx, int *dy) {
 #ifdef PLATFORM_WEB
-    if (pr.mouse_relative) {
-        int raw_dx = web_mouse_dx;
-        int raw_dy = web_mouse_dy;
-        web_mouse_dx = 0;
-        web_mouse_dy = 0;
-        if (dx)
-            *dx = raw_dx;
+    int raw_dx = web_mouse_dx;
+    int raw_dy = web_mouse_dy;
+    web_mouse_dx = 0;
+    web_mouse_dy = 0;
 
-        if (dy)
-            *dy = raw_dy;
-
-        return;
-    }
-#endif
-
+    if (dx)
+        *dx = raw_dx;
+    if (dy)
+        *dy = raw_dy;
+#else
     Vector2 d = GetMouseDelta();
     if (dx)
         *dx = (int)d.x;
 
     if (dy)
         *dy = (int)d.y;
+#endif
 }
 
 void set_mouse_position(int x, int y) {
@@ -1935,18 +2101,36 @@ void set_mouse_position(int x, int y) {
 }
 
 bool mouse_button_down(pixel_mouse_button button) {
+#ifdef PLATFORM_WEB
+    if ((int)button < 0 || (int)button >= 3)
+        return false;
+    return (web_mouse_buttons_down & (1u << (unsigned int)button)) != 0;
+#else
     int b = raylib_mouse_button(button);
     return b >= 0 && IsMouseButtonDown(b);
+#endif
 }
 
 bool mouse_button_pressed(pixel_mouse_button button) {
+#ifdef PLATFORM_WEB
+    if ((int)button < 0 || (int)button >= 3)
+        return false;
+    return (pr.mouse_pressed_frame & (1u << (unsigned int)button)) != 0;
+#else
     int b = raylib_mouse_button(button);
     return b >= 0 && IsMouseButtonPressed(b);
+#endif
 }
 
 bool mouse_button_released(pixel_mouse_button button) {
+#ifdef PLATFORM_WEB
+    if ((int)button < 0 || (int)button >= 3)
+        return false;
+    return (pr.mouse_released_frame & (1u << (unsigned int)button)) != 0;
+#else
     int b = raylib_mouse_button(button);
     return b >= 0 && IsMouseButtonReleased(b);
+#endif
 }
 
 void set_mouse_relative(bool enabled) {
