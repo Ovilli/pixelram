@@ -20,6 +20,42 @@ EM_JS(void, pixelram_set_pixel_aspect_js, (double ratio), {
     window.dispatchEvent(new Event("resize"));
 });
 
+
+EM_JS(void, pixelram_capture_frame_js,
+      (const unsigned char *rgba, int width, int height), {
+    if (!rgba || width <= 0 || height <= 0)
+        return;
+
+    let frame = window.__pixelramFrame;
+
+    if (!frame || frame.width !== width || frame.height !== height) {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext("2d", {alpha: false});
+        if (!context)
+            return;
+
+        const image = context.createImageData(width, height);
+
+        frame = {
+            canvas,
+            context,
+            image,
+            width,
+            height
+        };
+
+        window.__pixelramFrame = frame;
+        window.PIXELRAM_FRAME_CANVAS = canvas;
+    }
+
+    const size = width * height * 4;
+    frame.image.data.set(HEAPU8.subarray(rgba, rgba + size));
+    frame.context.putImageData(frame.image, 0, 0);
+});
+
 EM_JS(void, pixelram_install_web_handlers, (), {
     const canvas = Module.canvas;
     if (!canvas || canvas.dataset.pixelramHandlers === "1")
@@ -1739,6 +1775,20 @@ void present(void) {
      */
     pump_key_events();
     framebuffer_to_rgba();
+
+#ifdef PLATFORM_WEB
+    /*
+     * Keep the last presented CPU framebuffer available to the web shell.
+     * This makes a single present() persistent for features such as the CRT
+     * filter even after main() has returned.
+     */
+    pixelram_capture_frame_js(
+        (const unsigned char *)pr.rgba,
+        pr.width,
+        pr.height
+    );
+#endif
+
     UpdateTexture(pr.texture, pr.rgba);
     BeginDrawing();
     ClearBackground(BLACK);
