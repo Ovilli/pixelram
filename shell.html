@@ -89,10 +89,7 @@ function resumeBrowserAudio(){
  const contexts=[];
  const add=c=>{if(c&&typeof c.resume==='function'&&!contexts.includes(c))contexts.push(c)};
  try{add(window.SDL2&&window.SDL2.audioContext)}catch(_){}
- try{add(Module&&Module.SDL2&&Module.SDL2.audioContext)}catch(_){}
- try{add(window.AL&&window.AL.currentCtx&&window.AL.currentCtx.audioCtx)}catch(_){}
- try{add(Module&&Module.AL&&Module.AL.currentCtx&&Module.AL.currentCtx.audioCtx)}catch(_){}
- for(const c of contexts)if(c.state==='suspended')c.resume().catch(()=>{});
+ try{add(Module&&Module.SDL2&&Module.SDL2.audioContext)}catch(_){} for(const c of contexts)if(c.state==='suspended')c.resume().catch(()=>{});
 }
 window.addEventListener('pointerdown',resumeBrowserAudio,{capture:true});
 window.addEventListener('keydown',resumeBrowserAudio,{capture:true});
