@@ -14,9 +14,13 @@
  */
 #define screen_width  pixelram_screen_width
 #define screen_height pixelram_screen_height
+#define key_down      pixelram_key_down
+
 #include "pixelram.h"
+
 #undef screen_width
 #undef screen_height
+#undef key_down
 
 #include "doomgeneric.h"
 #include "doomkeys.h"

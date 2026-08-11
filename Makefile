@@ -138,7 +138,7 @@ doom: doom-source doom-data doom-music | $(BUILD_DIR)
 		-I. -I"$(DOOM_DIR)" \
 		$(DOOM_SOURCES) \
 		ports/doom/doom_pixelram.c \
-		pixelram.c \
+		ports/doom/pixelram_doom.c \
 		-lraylib -lm \
 		--embed-file doom1.wad@/doom1.wad \
 		--embed-file "$(FREEPATS_ROOT)/etc/timidity/freepats.cfg"@/timidity.cfg \

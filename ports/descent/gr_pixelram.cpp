@@ -143,7 +143,7 @@ static void update_mouse_buttons(void)
     for (int i = 0; i < 3; i++)
     {
         bool down =
-            pixel_mouse_buttonDown(
+            mouse_button_down(
                 pixelram_buttons[i]
             );
 
