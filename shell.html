@@ -61,8 +61,12 @@ function appendLog(kind,args){const near=logOutput.scrollHeight-logOutput.scroll
 console.log=(...a)=>{if(hiddenRuntimeMessage(a))return;nativeConsole.log(...a);appendLog('stdout',a)};console.warn=(...a)=>{if(hiddenRuntimeMessage(a))return;nativeConsole.warn(...a);appendLog('warn',a)};console.error=(...a)=>{if(hiddenRuntimeMessage(a))return;nativeConsole.error(...a);appendLog('stderr',a)};
 logOutput.addEventListener('scroll',()=>{const d=logOutput.scrollHeight-logOutput.scrollTop-logOutput.clientHeight;consolePanel.dataset.autoscroll=d<48?'1':'0'});
 clearLog.addEventListener('click',()=>{logOutput.textContent='';
-const initialArgs=activeArgs();
-argsInput.value=initialArgs.map(quoteArg).join(' ');
+function refreshArgsInput(){
+ argsInput.value=activeArgs().map(quoteArg).join(' ')
+}
+refreshArgsInput();
+window.addEventListener('pixelram-args-ready',refreshArgsInput);
+
 function runArgs(){
  setUrlArgs(splitArgs(argsInput.value))
 }
@@ -109,7 +113,10 @@ function argsFromUrl(){
 function activeArgs(){
  const url=argsFromUrl();
  if(url.length)return url;
- if(Array.isArray(window.PIXELRAM_ARGS))return window.PIXELRAM_ARGS.map(String);
+ if(window.Module && Array.isArray(window.Module.arguments))
+   return window.Module.arguments.map(String);
+ if(Array.isArray(window.PIXELRAM_ARGS))
+   return window.PIXELRAM_ARGS.map(String);
  return []
 }
 function setUrlArgs(args){
@@ -159,51 +166,10 @@ window.addEventListener('keydown',resumeBrowserAudio,{capture:true});
 window.addEventListener('keydown',e=>{if(e.repeat)return;if(e.code==='Backquote'){e.preventDefault();e.stopImmediatePropagation();toggleConsole();return}if(e.code==='F6'){e.preventDefault();e.stopImmediatePropagation();toggleCrt()}},true);
 window.addEventListener('resize',layoutScreen);new MutationObserver(layoutScreen).observe(canvas,{attributes:true,attributeFilter:['width','height']});window.addEventListener('error',e=>{if(e.message)appendLog('stderr',[e.message])});window.addEventListener('unhandledrejection',e=>appendLog('stderr',['Unhandled promise rejection:',e.reason]));
 consolePanel.dataset.autoscroll='1';layoutScreen();requestAnimationFrame(crtLoop);requestAnimationFrame(()=>canvas.focus({preventScroll:true}));
-Module={
- canvas,
- arguments: activeArgs(),
- print:t=>console.log(t),
- printErr:t=>console.error(t),
- preRun:[function(){
-   const args=activeArgs();
-   const candidates=[...new Set(args.filter(arg =>
-     arg &&
-     !arg.startsWith('-') &&
-     !arg.includes('://') &&
-     !arg.startsWith('/')
-   ))];
-
-   for(const name of candidates){
-     const dep='pixelram-file:' + name;
-     addRunDependency(dep);
-
-     fetch(name,{cache:'no-store'})
-       .then(response=>{
-         if(!response.ok)throw new Error(String(response.status));
-         return response.arrayBuffer()
-       })
-       .then(buffer=>{
-         const slash=name.lastIndexOf('/');
-         const dir=slash>=0 ? name.slice(0,slash) : '';
-         const file=slash>=0 ? name.slice(slash+1) : name;
-
-         if(dir){
-           let path='';
-           for(const part of dir.split('/')){
-             if(!part)continue;
-             path += '/' + part;
-             try{FS.mkdir(path)}catch(_){}
-           }
-         }
-
-         const target='/' + name.replace(/^\.?\//,'');
-         FS.writeFile(target,new Uint8Array(buffer));
-       })
-       .catch(()=>{})
-       .finally(()=>removeRunDependency(dep));
-   }
- }]
-};
+Module=Module||{};
+Module.canvas=canvas;
+Module.print=t=>console.log(t);
+Module.printErr=t=>console.error(t);
 })();
 </script>
 {{{ SCRIPT }}}
