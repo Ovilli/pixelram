@@ -137,8 +137,10 @@ def main():
     ):
         shutil.copy2(port / name, target / name)
 
-    for name in ("pixelram.c", "pixelram.h", "shell.html", "preload_game_files.js"):
+    for name in ("pixelram.c", "pixelram.h", "shell.html"):
         shutil.copy2(project / name, target / name)
+
+    shutil.copy2(port / "preload_game_files.js", target / "preload_game_files.js")
 
     music_assets = project / ".cache" / "descent-music"
     tsf_header = music_assets / "tsf.h"
