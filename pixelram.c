@@ -110,6 +110,7 @@ EM_JS(void, pixelram_set_fullscreen_js, (int enabled), {
 #endif
 
 #define PIXELRAM_KEY_QUEUE_SIZE 128
+#define PIXELRAM_KEY_STATE_SIZE ((int)pixel_key_f12 + 1)
 
 typedef struct {
     uint8_t r;
@@ -1190,6 +1191,13 @@ typedef struct {
     pixel_key_event key_queue[PIXELRAM_KEY_QUEUE_SIZE];
     unsigned int key_read;
     unsigned int key_write;
+
+    /*
+     * Browser key transitions captured during present().
+     * They describe exactly one program frame.
+     */
+    bool key_pressed_frame[PIXELRAM_KEY_STATE_SIZE];
+    bool key_released_frame[PIXELRAM_KEY_STATE_SIZE];
 } PixelRAM_State;
 
 static PixelRAM_State pr = {0};
@@ -1349,6 +1357,13 @@ static bool modifier_released(int left, int right) {
 }
 
 static void queue_key_event(pixel_key key, bool pressed) {
+    if ((int)key >= 0 && (int)key < PIXELRAM_KEY_STATE_SIZE) {
+        if (pressed)
+            pr.key_pressed_frame[(int)key] = true;
+        else
+            pr.key_released_frame[(int)key] = true;
+    }
+
     unsigned int next = (pr.key_write + 1) % PIXELRAM_KEY_QUEUE_SIZE;
 
     /*
@@ -1365,6 +1380,9 @@ static void queue_key_event(pixel_key key, bool pressed) {
 }
 
 static void pump_key_events(void) {
+    memset(pr.key_pressed_frame, 0, sizeof(pr.key_pressed_frame));
+    memset(pr.key_released_frame, 0, sizeof(pr.key_released_frame));
+
     for (size_t i = 0; i < sizeof(key_map) / sizeof(key_map[0]); i++) {
         int key = key_map[i].raylib;
         if (IsKeyPressed(key)) {
@@ -1812,6 +1830,12 @@ bool key_down(pixel_key key) {
 }
 
 bool key_pressed(pixel_key key) {
+#ifdef PLATFORM_WEB
+    int index = (int)key;
+    return index >= 0 &&
+           index < PIXELRAM_KEY_STATE_SIZE &&
+           pr.key_pressed_frame[index];
+#else
     switch (key) {
         case pixel_key_shift:
             return modifier_pressed(KEY_LEFT_SHIFT, KEY_RIGHT_SHIFT);
@@ -1824,9 +1848,16 @@ bool key_pressed(pixel_key key) {
             return (k != KEY_NULL) && IsKeyPressed(k);
         }
     }
+#endif
 }
 
 bool key_released(pixel_key key) {
+#ifdef PLATFORM_WEB
+    int index = (int)key;
+    return index >= 0 &&
+           index < PIXELRAM_KEY_STATE_SIZE &&
+           pr.key_released_frame[index];
+#else
     switch (key) {
         case pixel_key_shift:
             return modifier_released(KEY_LEFT_SHIFT, KEY_RIGHT_SHIFT);
@@ -1839,6 +1870,7 @@ bool key_released(pixel_key key) {
             return (k != KEY_NULL) && IsKeyReleased(k);
         }
     }
+#endif
 }
 
 bool poll_key_event(pixel_key_event *event) {
