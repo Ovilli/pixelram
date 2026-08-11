@@ -1,18 +1,19 @@
-Prince CRT logical-resolution fix
+Prince CRT fix v2
 
-SDLPoP draws Prince of Persia at 320x200, while SDL/Emscripten can give the
-HTML canvas a much larger backing resolution. The PixelRAM CRT shader used to
-mistake that enlarged canvas for the original raster, which produced far too
-many scanlines and visible moire/dark rings.
+SDLPoP's browser canvas can be much larger than the original 320x200 raster.
 
-This patch:
-- teaches shell.html about an optional logical framebuffer size;
-- makes the CRT shader use that logical size for Gaussian pixel/scanline
-  reconstruction;
-- tells the Prince port explicitly that its logical raster is 320x200.
+The shell now detects ports which declare a logical framebuffer size different
+from the actual browser canvas. Before applying the CRT shader it creates an
+offscreen logical framebuffer using nearest-neighbour scaling and uploads that
+exact raster to the CRT shader.
+
+For Prince this means:
+
+    SDL canvas (large) -> 320x200 logical canvas -> CRT shader
+
+Other PixelRAM programs whose canvas already equals their logical framebuffer
+continue to go directly into the CRT shader.
 
 Rebuild with:
 
     make prince
-
-No SDLPoP source modification is required for this fix.
