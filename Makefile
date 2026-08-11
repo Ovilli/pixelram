@@ -14,6 +14,7 @@ WEB_FLAGS := \
 	-sUSE_GLFW=3 \
 	-sASYNCIFY \
 	-sSINGLE_FILE=1 \
+	-sSINGLE_FILE_BINARY_ENCODE=0 \
 	--shell-file $(SHELL_FILE)
 
 .PHONY: all clean palettes test $(EXAMPLES) games \
@@ -134,6 +135,7 @@ doom: doom-source doom-data doom-music | $(BUILD_DIR)
 		-sASYNCIFY \
 		-sFORCE_FILESYSTEM \
 		-sSINGLE_FILE=1 \
+		-sSINGLE_FILE_BINARY_ENCODE=0 \
 		--shell-file "$(SHELL_FILE)" \
 		-I. -I"$(DOOM_DIR)" \
 		$(DOOM_SOURCES) \
