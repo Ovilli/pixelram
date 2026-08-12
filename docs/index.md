@@ -22,12 +22,13 @@ This is the real `examples/fire.c`, compiled to WebAssembly as part of the docum
 <style>
 .pixelram-demo {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 2 / 1;
   overflow: hidden;
   border-radius: 8px;
   background: #030405;
   box-shadow: 0 10px 35px rgba(0, 0, 0, .2);
 }
+
 .pixelram-demo iframe {
   display: block;
   width: 100%;
