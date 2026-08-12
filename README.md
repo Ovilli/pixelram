@@ -2,15 +2,80 @@
 
 **A tiny software framebuffer for fast, low-level pixel graphics and games.**
 
-PixelRAM gives a C program a block of memory that represents the screen. You can read and write pixels, change palettes, handle input, and present complete frames. The public API deliberately stays small: it is meant for old-school graphics experiments, software renderers, teaching, and ports of engines such as DOOM or Descent.
+PixelRAM gives C programs the kind of screen that made early PC graphics fun: a block of memory full of pixels. There is no scene graph, no sprite engine, and no drawing API to learn first. Write pixels, change a palette, call `present()`, and the framebuffer appears on screen.
 
-PixelRAM is related to [Pixelflow Canvas](https://specht.github.io/pixelflow_canvas_ruby/) in spirit, but it is a different tool. Pixelflow Canvas is a Visual Studio Code canvas with language drivers. PixelRAM is a fast software framebuffer library. The fire demo in `examples/fire.c` is intentionally almost the same algorithm as the Ruby Pixelflow Canvas demo.
+That makes PixelRAM small enough for teaching, but fast enough for software renderers and ports such as DOOM and Descent. The same code can run natively or compile to WebAssembly for the browser.
 
-**Documentation:** [https://specht.github.io/pixelram/](https://specht.github.io/pixelram/)
+## Start with fire
 
-![PixelRAM fire demo](docs/images/fire.png)
+This complete program creates the classic palette-based fire effect:
 
-Application code includes only `pixelram.h`; the platform backend is an implementation detail.
+```c
+#include "pixelram.h"
+
+#include <stdlib.h>
+#include <time.h>
+
+#define WIDTH  256
+#define HEIGHT 128
+
+static int clamp(int value, int low, int high)
+{
+    if (value < low) return low;
+    if (value > high) return high;
+    return value;
+}
+
+int main(void)
+{
+    if (!screen_open(WIDTH, HEIGHT, pixel_indexed8, "PixelRAM fire"))
+        return 1;
+
+    srand((unsigned int)time(NULL));
+
+    for (int i = 0; i < 16; i++)
+    {
+        set_palette(i,      i * 8,       0,           0);
+        set_palette(i + 16, i * 8 + 128, i * 8,      0);
+        set_palette(i + 32, 255,         i * 8 + 128, i * 8);
+        set_palette(i + 48, 255,         255,         i * 8 + 128);
+    }
+
+    while (!should_close())
+    {
+        for (int y = HEIGHT - 2; y < HEIGHT; y++)
+            for (int x = 10; x < WIDTH - 10; x++)
+                set_pixel(x, y, 63);
+
+        for (int y = 0; y < HEIGHT; y++)
+        {
+            for (int x = 0; x < WIDTH; x++)
+            {
+                int color = get_pixel(x, y + 1) * 2;
+                color += get_pixel(x - 1, y);
+                color += get_pixel(x + 1, y);
+                color /= 4;
+
+                if (color > 0)
+                    color += rand() % 7 - 3;
+
+                set_pixel(x, y, (uint8_t)clamp(color, 0, 63));
+            }
+        }
+
+        present();
+    }
+
+    screen_close();
+    return 0;
+}
+```
+
+**[Run this exact example in your browser →](https://specht.github.io/pixelram/#live-fire)**
+
+The live version is compiled from `examples/fire.c` when the documentation site is deployed. The source is intentionally close to the Pixelflow Canvas fire demo: the interesting idea stays visible while C/WebAssembly makes it fast.
+
+**[Read the documentation →](https://specht.github.io/pixelram/)**
 
 ## First program
 
