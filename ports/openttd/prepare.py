@@ -92,9 +92,25 @@ def main() -> None:
         "Emscripten shell",
     )
 
+    # OpenTTD ships the Emscripten liblzma port it expects, but upstream's
+    # FindLibLZMA.cmake assumes it was copied into the emsdk installation.
+    # Emscripten also supports external ports by path, so keep the workspace
+    # image generic and point CMake at OpenTTD's own pinned port definition.
+    lzma_cmake = source / "os" / "emscripten" / "cmake" / "FindLibLZMA.cmake"
+    lzma_text = lzma_cmake.read_text()
+    bundled_port = "--use-port=contrib.liblzma"
+    external_port = "--use-port=${CMAKE_SOURCE_DIR}/os/emscripten/ports/liblzma.py"
+    if lzma_text.count(bundled_port) != 3:
+        raise SystemExit(
+            "Expected three contrib.liblzma references in OpenTTD FindLibLZMA.cmake"
+        )
+    lzma_cmake.write_text(lzma_text.replace(bundled_port, external_port))
+
     replace_once(
         source / "os" / "emscripten" / "pre.js",
         "Module.arguments.push('-mnull', '-snull', '-vsdl');",
+        "Module.arguments = Module.arguments || [];\n"
+        "Module.preRun = Module.preRun || [];\n"
         "Module.arguments.push('-mnull', '-snull', '-vpixelram', '-b32bpp-anim');",
         "Emscripten driver arguments",
     )

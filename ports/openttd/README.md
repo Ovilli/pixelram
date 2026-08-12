@@ -23,3 +23,8 @@ music sets are already downloaded and bundled so audio can be enabled next.
 
 The default virtual resolution is 800x600. OpenTTD draws its own software mouse
 cursor; PixelRAM does not pointer-lock the mouse for this port.
+
+OpenTTD's Emscripten build needs liblzma for its compressed title game and
+savegames. PixelRAM uses the `liblzma.py` port bundled with the pinned OpenTTD
+source as an Emscripten external port. Nothing OpenTTD-specific has to be
+installed into the workspace image.
