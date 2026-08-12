@@ -2218,6 +2218,15 @@ bool mouse_button_released(pixel_mouse_button button) {
 }
 
 void set_mouse_relative(bool enabled) {
+    /*
+     * Some ports (notably Chocolate Descent) repeat their desired relative
+     * mouse state every frame. Treat this as state, not as a reset command:
+     * clearing deltas on an unchanged `true` would erase movement before the
+     * game's control code gets a chance to read it.
+     */
+    if (pr.mouse_relative == enabled)
+        return;
+
     pr.mouse_relative = enabled;
 
 #ifdef PLATFORM_WEB
