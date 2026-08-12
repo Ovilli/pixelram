@@ -454,38 +454,33 @@ endif()
     text_source = text_path.read_text()
 
     text_old = (
-        "\\t\\t#ifdef MACINTOSH\\t\\t\\t// total hack for mac patch since they don't want to patch data.\\n"
-        "\\t\\tif (!tptr && (i == 644) )\\n"
-        "\\t\\t\\tbreak;\\n"
-        "\\t\\t#else\\n"
-        "\\t\\tif (!tptr)\\n"
-        "\\t\\t\\tError(\\\"Not enough strings in text file - expecting %d, found %d\\\", N_text_strings,i);\\n"
-        "\\t\\t#endif\\n"
+        '\t\tif (!tptr)\n'
+        '\t\t\tError("Not enough strings in text file - expecting %d, found %d", N_text_strings,i);\n'
     )
 
     text_new = (
-        "\\t\\t#ifdef MACINTOSH\\t\\t\\t// total hack for mac patch since they don't want to patch data.\\n"
-        "\\t\\tif (!tptr && (i == 644) )\\n"
-        "\\t\\t\\tbreak;\\n"
-        "\\t\\t#elif defined(__EMSCRIPTEN__)\\n"
-        "\\t\\tif (!tptr)\\n"
-        "\\t\\t{\\n"
-        "\\t\\t\\t/* Descent 1.4 shareware ends at string 514. */\\n"
-        "\\t\\t\\tstatic char empty_text[] = \\\"\\\";\\n"
-        "\\t\\t\\tfor (int missing = i; missing < N_text_strings; ++missing)\\n"
-        "\\t\\t\\t\\tText_string[missing] = empty_text;\\n"
-        "\\t\\t\\tbreak;\\n"
-        "\\t\\t}\\n"
-        "\\t\\t#else\\n"
-        "\\t\\tif (!tptr)\\n"
-        "\\t\\t\\tError(\\\"Not enough strings in text file - expecting %d, found %d\\\", N_text_strings,i);\\n"
-        "\\t\\t#endif\\n"
+        '#if defined(__EMSCRIPTEN__)\n'
+        '\t\tif (!tptr)\n'
+        '\t\t{\n'
+        '\t\t\t/* Descent 1.4 shareware ends at string 514. */\n'
+        '\t\t\tstatic char empty_text[] = "";\n'
+        '\t\t\tfor (int missing = i; missing < N_text_strings; ++missing)\n'
+        '\t\t\t\tText_string[missing] = empty_text;\n'
+        '\t\t\tbreak;\n'
+        '\t\t}\n'
+        '#else\n'
+        '\t\tif (!tptr)\n'
+        '\t\t\tError("Not enough strings in text file - expecting %d, found %d", N_text_strings,i);\n'
+        '#endif\n'
     )
 
     if text_new not in text_source:
-        if text_old not in text_source:
-            raise RuntimeError("text.cpp shareware compatibility: expected text-loader anchor not found")
-        text_source = text_source.replace(text_old, text_new, 1)
+        text_source = replace_once(
+            text_source,
+            text_old,
+            text_new,
+            "text.cpp shareware text table"
+        )
 
     text_path.write_text(text_source)
 
