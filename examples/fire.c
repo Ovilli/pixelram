@@ -6,7 +6,7 @@
 #define WIDTH  256
 #define HEIGHT 128
 
-static int clamp_int(int value, int low, int high)
+static int clamp(int value, int low, int high)
 {
     if (value < low) return low;
     if (value > high) return high;
@@ -31,26 +31,25 @@ int main(void)
 
     while (!should_close())
     {
-        /* Keep two rows at the bottom hot. */
-        for (int y = 126; y <= 127; y++)
-            for (int x = 10; x <= 245; x++)
+        /* Heat the bottom two rows. */
+        for (int y = HEIGHT - 2; y < HEIGHT; y++)
+            for (int x = 10; x < WIDTH - 10; x++)
                 set_pixel(x, y, 63);
 
-        /* Apply the same tiny filter used by the Pixelflow Canvas demo. */
+        /* Pull heat upward and add a little random flicker. */
         for (int y = 0; y < HEIGHT; y++)
         {
             for (int x = 0; x < WIDTH; x++)
             {
-                int c = get_pixel(x, y + 1) * 2;
-                c += get_pixel(x - 1, y);
-                c += get_pixel(x + 1, y);
-                c /= 4;
+                int color = get_pixel(x, y + 1) * 2;
+                color += get_pixel(x - 1, y);
+                color += get_pixel(x + 1, y);
+                color /= 4;
 
-                if (c > 0)
-                    c += rand() % 7 - 3;
+                if (color > 0)
+                    color += rand() % 7 - 3;
 
-                c = clamp_int(c, 0, 63);
-                set_pixel(x, y, (uint8_t)c);
+                set_pixel(x, y, (uint8_t)clamp(color, 0, 63));
             }
         }
 

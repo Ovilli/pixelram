@@ -28,16 +28,15 @@ set_pixel(x, y, c)
 ## PixelRAM
 
 ```c
-int c = get_pixel(x, y + 1) * 2;
-c += get_pixel(x - 1, y);
-c += get_pixel(x + 1, y);
-c /= 4;
+int color = get_pixel(x, y + 1) * 2;
+color += get_pixel(x - 1, y);
+color += get_pixel(x + 1, y);
+color /= 4;
 
-if (c > 0)
-    c += rand() % 7 - 3;
+if (color > 0)
+    color += rand() % 7 - 3;
 
-c = clamp_int(c, 0, 63);
-set_pixel(x, y, (uint8_t)c);
+set_pixel(x, y, (uint8_t)clamp(color, 0, 63));
 ```
 
 Both versions work on palette indices rather than RGB colors. The lower rows are repeatedly heated to color 63, and each new pixel is calculated from nearby pixels. Small random changes make the flame unstable.
