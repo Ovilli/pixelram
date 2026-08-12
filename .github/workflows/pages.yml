@@ -59,7 +59,7 @@ jobs:
           emcc -O2 -std=c11 -Wall -Wextra -Wpedantic \
             -DPLATFORM_WEB -sUSE_GLFW=3 -sASYNCIFY \
             -sSINGLE_FILE=1 -sSINGLE_FILE_BINARY_ENCODE=0 \
-            --shell-file shell.html -I. \
+            --shell-file shell.html -I. -I/tmp/raylib/src \
             examples/fire.c pixelram.c \
             -L/tmp/raylib-build/raylib -lraylib \
             -o build/fire.html
