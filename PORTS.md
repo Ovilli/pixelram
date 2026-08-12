@@ -95,3 +95,31 @@ make clean-doom
 make clean-descent
 make clean-prince
 ```
+
+## OpenTTD (experimental)
+
+OpenTTD is the first higher-resolution, mouse-driven PixelRAM port. It is also
+fully free: no Transport Tycoon Deluxe files are required.
+
+```sh
+make openttd
+```
+
+PixelRAM pins OpenTTD 15.3 and downloads the official free base sets directly
+from the OpenTTD project:
+
+- OpenGFX 8.0 (`SHA-256 43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be`)
+- OpenSFX 1.0.3 (`SHA-256 e0a218b7dd9438e701503b0f84c25a97c1c11b7c2f025323fb19d6db16ef3759`)
+- OpenMSX 0.4.2 (`SHA-256 5a4277a2e62d87f2952ea5020dc20fb2f6ffafdccf9913fbf35ad45ee30ec762`)
+
+The initial port uses OpenTTD's existing Emscripten game loop but replaces its
+active video/input backend with PixelRAM. OpenTTD draws directly into a
+PixelRAM RGBA framebuffer at 800x600 and uses its own software mouse cursor.
+Sound and music are disabled in this first milestone while the framebuffer and
+input port is stabilized.
+
+Output:
+
+```text
+build/openttd.html
+```
