@@ -1,7 +1,7 @@
 ---
 title: Adding PixelRAM to a project
 layout: page
-nav_order: 8
+nav_order: 7
 ---
 
 # Adding PixelRAM to a project
@@ -18,7 +18,7 @@ A project can vendor those files directly or download a pinned release from GitH
 ## Makefile download
 
 ```make
-PIXELRAM_VERSION := v0.1.0
+PIXELRAM_VERSION := v0.1.16
 PIXELRAM_BASE := https://raw.githubusercontent.com/specht/pixelram/$(PIXELRAM_VERSION)
 PIXELRAM_DIR := vendor/pixelram
 
@@ -34,7 +34,13 @@ $(PIXELRAM_DIR)/pixelram.h:
 Then make your executable depend on both files and compile `pixelram.c` together with your program.
 
 {: .important }
-Use a release tag such as `v0.1.0`, not `main`, in teaching material. A pinned tutorial should keep compiling even after PixelRAM evolves.
+Use a release tag such as `v0.1.16`, not `main`, in teaching material. A pinned tutorial should keep compiling even after PixelRAM evolves.
+
+## Platform dependency
+
+PixelRAM keeps raylib out of the public header, but `pixelram.c` uses raylib internally as its platform backend. A native project therefore needs a compatible raylib development setup; a WebAssembly project needs raylib built for Emscripten as well as Asyncify at link time.
+
+Hackschule Workspace already provides that toolchain, so student programs only include `pixelram.h` and compile `pixelram.c` with their own source.
 
 ## Why the implementation is one C file
 

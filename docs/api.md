@@ -1,7 +1,7 @@
 ---
 title: API reference
 layout: page
-nav_order: 9
+nav_order: 8
 ---
 
 # API reference
@@ -412,9 +412,9 @@ Returns the current mouse position in PixelRAM screen coordinates. Either pointe
 void mouse_delta(int *dx, int *dy);
 ```
 
-Returns mouse movement since the previous backend update. Either pointer may be `NULL`.
+Returns mouse movement for the current backend frame. Either pointer may be `NULL`.
 
-When relative mouse mode is active in a browser, PixelRAM uses pointer-lock movement and returns the accumulated relative movement since the last `mouse_delta()` call.
+When relative mouse mode is active in a browser, PixelRAM uses pointer-lock movement. Browser movement is accumulated and snapshotted at the frame boundary, so multiple `mouse_delta()` calls during the same frame see the same delta instead of consuming one another.
 
 ### `set_mouse_position`
 

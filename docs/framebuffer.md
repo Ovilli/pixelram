@@ -1,7 +1,7 @@
 ---
 title: Direct framebuffer access
 layout: page
-nav_order: 6
+nav_order: 5
 ---
 
 # Direct framebuffer access

@@ -5,7 +5,7 @@ CFLAGS := -O2 -std=c11 -Wall -Wextra -Wpedantic
 
 BUILD_DIR := build
 CACHE_DIR := .cache
-EXAMPLES := minimal fire
+EXAMPLES := minimal animation fire
 HTML := $(EXAMPLES:%=$(BUILD_DIR)/%.html)
 SHELL_FILE := shell.html
 

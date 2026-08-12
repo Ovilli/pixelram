@@ -2,9 +2,9 @@
 
 **A tiny software framebuffer for fast, low-level pixel graphics and games.**
 
-PixelRAM gives C programs the kind of screen that made early PC graphics fun: a block of memory full of pixels. There is no scene graph, no sprite engine, and no drawing API to learn first. Write pixels, change a palette, call `present()`, and the framebuffer appears on screen.
+PixelRAM gives C programs the kind of screen that made early PC graphics fun: a block of memory full of pixels. There is no scene graph, no sprite engine, and no drawing API to learn first. Write pixels directly, use a palette if you want one, and build everything else yourself.
 
-That makes PixelRAM small enough for teaching, but fast enough for software renderers and ports such as DOOM and Descent. The same code can run natively or compile to WebAssembly for the browser.
+That makes PixelRAM small enough for teaching, but fast enough for software renderers and ports such as DOOM, Descent, and SDLPoP. The same library can be used natively or compiled to WebAssembly for the browser.
 
 ## Start with fire
 
@@ -35,10 +35,10 @@ int main(void)
 
     for (int i = 0; i < 16; i++)
     {
-        set_palette(i,      i * 8,       0,           0);
-        set_palette(i + 16, i * 8 + 128, i * 8,      0);
-        set_palette(i + 32, 255,         i * 8 + 128, i * 8);
-        set_palette(i + 48, 255,         255,         i * 8 + 128);
+        set_palette(i, i * 8, 0, 0);
+        set_palette(i + 16, i * 8 + 128, i * 8, 0);
+        set_palette(i + 32, 255, i * 8 + 128, i * 8);
+        set_palette(i + 48, 255, 255, i * 8 + 128);
     }
 
     while (!should_close())
@@ -73,11 +73,13 @@ int main(void)
 
 **[Run this exact example in your browser →](https://specht.github.io/pixelram/#live-fire)**
 
-The live version is compiled from `examples/fire.c` when the documentation site is deployed. The source is intentionally close to the Pixelflow Canvas fire demo: the interesting idea stays visible while C/WebAssembly makes it fast.
+The live version is compiled from `examples/fire.c` whenever the documentation site is deployed. The source is intentionally close to the Pixelflow Canvas fire demo: the algorithm stays visible while C/WebAssembly makes it fast.
 
 **[Read the documentation →](https://specht.github.io/pixelram/)**
 
-## First program
+## Smallest useful program
+
+For a one-shot browser demo, drawing can be this small:
 
 ```c
 #include "pixelram.h"
@@ -87,9 +89,38 @@ int main(void)
     if (!screen_open(320, 180, pixel_indexed8, "PixelRAM"))
         return 1;
 
+    set_pixel(screen_width() / 2, screen_height() / 2, 10);
+    return 0;
+}
+```
+
+Color `10` is bright green in the default VGA palette. Web builds automatically show framebuffer changes until a program explicitly starts using `present()`, so a tiny one-shot example does not need a main loop. This auto-presentation is a browser convenience; portable/native animation code should use `present()` explicitly.
+
+## Add animation
+
+Animation introduces the normal PixelRAM frame loop. This example moves the same green pixel left and right:
+
+```c
+#include "pixelram.h"
+
+int main(void)
+{
+    if (!screen_open(320, 180, pixel_indexed8, "PixelRAM animation"))
+        return 1;
+
+    int x = 0;
+    int direction = 1;
+    int y = screen_height() / 2;
+
     while (!should_close())
     {
-        set_pixel(160, 90, 15);
+        set_pixel(x, y, 0);
+
+        x += direction;
+        if (x == 0 || x == screen_width() - 1)
+            direction = -direction;
+
+        set_pixel(x, y, 10);
         present();
     }
 
@@ -98,12 +129,11 @@ int main(void)
 }
 ```
 
-In indexed mode every pixel is one byte containing a palette index from 0 to 255. The default palette is the classic 256-color VGA palette. PixelRAM presents at a maximum of **60 FPS by default**; call `set_target_fps(30)` (or another value) after `screen_open()` to choose a different cap.
-
+The first explicit `present()` switches a web program from automatic one-shot presentation to the normal explicit frame model. From then on, call `present()` once after drawing each completed frame.
 
 ## Frame rate
 
-PixelRAM targets **60 FPS by default** on both native and WebAssembly builds. Change the cap at any time after `screen_open()`:
+PixelRAM targets **60 FPS by default**. Change the cap at any time after `screen_open()`:
 
 ```c
 set_target_fps(30);
@@ -115,8 +145,7 @@ The frame-rate cap controls how often `present()` completes. Game logic that mus
 
 ## Build the examples
 
-PixelRAM is designed for WebAssembly projects in Hackschule Workspace.
-The required Emscripten and raylib toolchain is already installed.
+PixelRAM is designed for WebAssembly projects in Hackschule Workspace. The required Emscripten and raylib toolchain is already installed there.
 
 Build all examples:
 
@@ -124,16 +153,15 @@ Build all examples:
 make
 ```
 
-The resulting HTML files are written to build/:
+The resulting self-contained HTML files are written to `build/`:
 
-```sh
+```text
 build/minimal.html
+build/animation.html
 build/fire.html
 ```
 
-Each demo is a self-contained HTML file and can be opened directly from the Workspace.
-
-The Hackschule workspace already supplies the platform toolchain used by its PixelRAM projects, so student projects do not need to call raylib directly.
+The Hackschule workspace supplies the platform toolchain, so student programs use only the PixelRAM API and do not need to call raylib directly.
 
 ## Use PixelRAM in another project
 
@@ -147,7 +175,7 @@ pixelram.h
 You can copy them into a project, add them to a template, or let a Makefile download a pinned release:
 
 ```make
-PIXELRAM_VERSION := v0.1.1
+PIXELRAM_VERSION := v0.1.16
 PIXELRAM_BASE := https://raw.githubusercontent.com/specht/pixelram/$(PIXELRAM_VERSION)
 PIXELRAM_DIR := vendor/pixelram
 
@@ -206,25 +234,41 @@ pixels[y * screen_pitch() + x] = color;
 
 ## WebAssembly
 
-PixelRAM retains the web-aware behavior of the original framebuffer backend: presentation synchronizes with `requestAnimationFrame`, `sleep_ms()` yields through Asyncify, and relative mouse mode uses browser pointer lock. A web build therefore needs a raylib/Emscripten toolchain and Asyncify enabled.
+PixelRAM's web backend synchronizes explicit presentation with `requestAnimationFrame`, lets one-shot examples auto-present, yields through Asyncify for `sleep_ms()`, and uses browser pointer lock for relative mouse mode. A web build therefore needs a raylib/Emscripten toolchain and Asyncify enabled.
+
+The shared browser shell also provides discoverable controls for the console, CRT filter, and fullscreen. Move the pointer over the bottom of the display to reveal them; the controls hide again after mouse inactivity.
+
+## Larger ports
+
+Optional Makefile targets demonstrate that the same framebuffer API can support real software-rendered games:
+
+```sh
+make doom
+make descent
+make prince
+```
+
+The engine source is downloaded and cached, while commercial game data is supplied separately. See [`PORTS.md`](PORTS.md) for the required files.
 
 ## Documentation
 
 The complete documentation is available at **[https://specht.github.io/pixelram/](https://specht.github.io/pixelram/)**.
 
-The GitHub Pages source lives in `docs/`, and `.github/workflows/pages.yml` builds and deploys it with GitHub Actions.
+The GitHub Pages source lives in `docs/`, and `.github/workflows/pages.yml` builds and deploys it with GitHub Actions. The live fire example on the front page is compiled from the repository source during that workflow.
 
 ## Repository layout
 
 ```text
-pixelram.c              library implementation
-pixelram.h              public API
-examples/minimal.c      smallest useful example
-examples/fire.c         Pixelflow-to-PixelRAM bridge demo
-docs/                   GitHub Pages documentation
-tools/palettes.yaml     shared Pixelflow palette source
+pixelram.c                library implementation
+pixelram.h                public API
+examples/minimal.c        one-shot browser example
+examples/animation.c      smallest animated example
+examples/fire.c           Pixelflow-to-PixelRAM bridge demo
+docs/                     GitHub Pages documentation
+ports/                    optional engine-port adapters
+tools/palettes.yaml       shared Pixelflow palette source
 tools/generate_palettes.py
-tests/                  backend-independent framebuffer tests
+tests/                    backend-independent framebuffer tests
 Makefile
 LICENSE
 ```
