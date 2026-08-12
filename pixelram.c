@@ -1703,8 +1703,6 @@ bool screen_open(int width, int height, pixel_mode mode, const char *title) {
     web_mouse_y = 0;
     web_mouse_dx = 0;
     web_mouse_dy = 0;
-    web_mouse_frame_dx = 0;
-    web_mouse_frame_dy = 0;
     web_mouse_position_valid = false;
     web_mouse_buttons_down = 0;
     web_mouse_pressed_pending = 0;
