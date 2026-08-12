@@ -69,7 +69,7 @@ def main() -> None:
         "        target_include_directories(openttd_lib PRIVATE\n"
         "            ${CMAKE_SOURCE_DIR}/src/video/pixelram\n"
         "        )\n"
-        "        target_link_libraries(openttd_lib PRIVATE pixelram_runtime)\n"
+        "        target_link_libraries(openttd_lib pixelram_runtime)\n"
         "        target_link_libraries(WASM::WASM INTERFACE \"-lraylib\")\n"
         "        target_link_libraries(WASM::WASM INTERFACE \"-sUSE_GLFW=3\")\n"
         "        target_link_libraries(WASM::WASM INTERFACE \"-sASYNCIFY\")\n"

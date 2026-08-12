@@ -524,9 +524,18 @@ endif()
 			strncpy(Songs[i].filename, name, sizeof(Songs[i].filename) - 1);
 			++i;
 		}
+		if (i <= SONG_FIRST_LEVEL_SONG)
+		{
+			/*
+			 * Some old shareware data sets do not expose separate level
+			 * HMP files.  Keep one silent level slot so the modulo in
+			 * songs_play_level_song() remains valid; digi_play_midi_song()
+			 * already treats a missing/empty song as non-fatal.
+			 */
+			memset(&Songs[i], 0, sizeof(Songs[i]));
+			++i;
+		}
 		Num_songs = i;
-		if (Num_songs <= SONG_FIRST_LEVEL_SONG)
-			Error("Shareware data contains no level music");
 		Songs_initialized = 1;
 		return;
 #else
