@@ -907,6 +907,30 @@ void S_WebMusicPump();
     )
 
     # --------------------------------------------------------------
+    # Browser control defaults.
+    # --------------------------------------------------------------
+
+    kconfig_path = source / "main_d1" / "kconfig.cpp"
+    kconfig = kconfig_path.read_text()
+
+    control_default_old = "uint8_t Config_control_type = 0;"
+    control_default_new = """#ifdef __EMSCRIPTEN__
+uint8_t Config_control_type = CONTROL_MOUSE;
+#else
+uint8_t Config_control_type = 0;
+#endif"""
+
+    if "Config_control_type = CONTROL_MOUSE" not in kconfig:
+        kconfig = replace_once(
+            kconfig,
+            control_default_old,
+            control_default_new,
+            "Descent browser mouse controls"
+        )
+
+    kconfig_path.write_text(kconfig)
+
+    # --------------------------------------------------------------
     # Browser-friendly sleeps.
     # --------------------------------------------------------------
 

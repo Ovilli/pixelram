@@ -181,6 +181,7 @@ static inline uint16_t rgb565_pack(uint8_t r, uint8_t g, uint8_t b) {
 
 /* Display -------------------------------------------------------------- */
 
+/* On the web, one-shot programs auto-present until the first explicit call. */
 void present(void);
 void wait_vblank(void);
 

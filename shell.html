@@ -78,12 +78,14 @@ function runArgs(){
 }
 argsRun.addEventListener('click',runArgs);
 argsInput.addEventListener('keydown',e=>{
+ e.stopPropagation();
  if(e.key==='Enter'){
    e.preventDefault();
-   e.stopPropagation();
    runArgs()
  }
 });
+argsInput.addEventListener('keyup',e=>e.stopPropagation());
+argsInput.addEventListener('keypress',e=>e.stopPropagation());
 function showToast(m){toast.textContent=m;toast.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('visible'),800)}
 function currentPixelAspect(){const v=parseFloat(getComputedStyle(root).getPropertyValue('--pixel-aspect-ratio'));return Number.isFinite(v)&&v>0?v:1}
 function logicalSize(){const w=Number(window.PIXELRAM_LOGICAL_WIDTH)||canvas.width||320,h=Number(window.PIXELRAM_LOGICAL_HEIGHT)||canvas.height||200;return{w:Math.max(1,w),h:Math.max(1,h)}}
@@ -228,7 +230,7 @@ function resumeBrowserAudio(){
 }
 window.addEventListener('pointerdown',resumeBrowserAudio,{capture:true});
 window.addEventListener('keydown',resumeBrowserAudio,{capture:true});
-window.addEventListener('keydown',e=>{if(e.repeat)return;if(e.code==='Backquote'){e.preventDefault();e.stopImmediatePropagation();toggleConsole();return}if(e.code==='F6'){e.preventDefault();e.stopImmediatePropagation();toggleCrt();return}if(e.code==='F11'){e.preventDefault();e.stopImmediatePropagation();toggleFullscreen()}},true);
+window.addEventListener('keydown',e=>{if(document.activeElement===argsInput)return;if(e.repeat)return;if(e.code==='Backquote'){e.preventDefault();e.stopImmediatePropagation();toggleConsole();return}if(e.code==='F6'){e.preventDefault();e.stopImmediatePropagation();toggleCrt();return}if(e.code==='F11'){e.preventDefault();e.stopImmediatePropagation();toggleFullscreen()}},true);
 window.addEventListener('resize',layoutScreen);new MutationObserver(layoutScreen).observe(canvas,{attributes:true,attributeFilter:['width','height']});window.addEventListener('error',e=>{if(e.message)appendLog('stderr',[e.message])});window.addEventListener('unhandledrejection',e=>appendLog('stderr',['Unhandled promise rejection:',e.reason]));
 consolePanel.dataset.autoscroll='1';layoutScreen();requestAnimationFrame(crtLoop);requestAnimationFrame(()=>canvas.focus({preventScroll:true}));
 Module=Module||{};

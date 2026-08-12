@@ -22,6 +22,8 @@ The web backend is enabled when the implementation is compiled with `PLATFORM_WE
 
 `present()` synchronizes with browser animation frames. PixelRAM targets 60 FPS by default; `set_target_fps()` can select a lower or different maximum. On high-refresh-rate displays PixelRAM skips browser animation frames as needed to honor the requested cap.
 
+For tiny one-shot demos, explicit presentation is optional: before a program has ever called `present()`, framebuffer writes are automatically shown on the next browser frame. The first explicit `present()` switches to the normal double-buffered frame model.
+
 ```c
 set_target_fps(30);
 ```

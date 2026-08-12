@@ -26,3 +26,11 @@ build/descent.html
 
 Sound effects use Emscripten OpenAL. Music uses TinySoundFont and Chocolate
 Descent's existing HMP sequencer.
+
+## Mouse control in the browser
+
+The WebAssembly port defaults to Descent's **Mouse** control scheme. When the
+game requests relative mouse mode, click the game display to capture and hide
+the pointer. Escape releases browser pointer lock; click the display again to
+capture it. Menus and ordinary PixelRAM programs keep normal absolute mouse
+input.

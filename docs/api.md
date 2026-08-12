@@ -283,6 +283,8 @@ Makes the current software framebuffer visible. A normal PixelRAM program calls 
 
 PixelRAM targets 60 FPS by default. `present()` observes the target configured by `set_target_fps()` and also processes the input transitions used by `poll_key_event()`.
 
+On the web, simple one-shot programs do not have to call `present()`: until the first explicit `present()`, framebuffer changes are automatically displayed on the next browser frame. Calling `present()` once switches the program to the normal explicit frame-presentation model.
+
 ```c
 while (!should_close())
 {

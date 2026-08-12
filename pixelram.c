@@ -20,6 +20,20 @@ EM_JS(void, pixelram_set_pixel_aspect_js, (double ratio), {
     window.dispatchEvent(new Event("resize"));
 });
 
+EM_JS(void, pixelram_schedule_auto_present_js, (), {
+    if (window.__pixelramAutoPresentScheduled)
+        return;
+
+    window.__pixelramAutoPresentScheduled = true;
+
+    requestAnimationFrame(() => {
+        window.__pixelramAutoPresentScheduled = false;
+
+        if (Module._pixelram_web_auto_present)
+            Module._pixelram_web_auto_present();
+    });
+});
+
 
 EM_JS(void, pixelram_capture_frame_js,
       (const unsigned char *rgba, int width, int height), {
@@ -162,6 +176,20 @@ EM_JS(void, pixelram_install_web_handlers, (), {
         trackedMouseButtons = 0;
     });
 
+    let relativeMouseUnlockTime = -Infinity;
+
+    document.addEventListener("pointerlockchange", () => {
+        /*
+         * Escape is the browser's pointer-lock escape hatch. Chromium rejects
+         * an immediate reacquire after that gesture, so require a fresh click
+         * after a short grace period instead of leaking a rejected promise.
+         */
+        if (document.pointerLockElement !== canvas &&
+            canvas.dataset.pixelramRelativeMouse === "1") {
+            relativeMouseUnlockTime = performance.now();
+        }
+    });
+
     canvas.addEventListener("click", async () => {
         if (canvas.dataset.pixelramFullscreen === "1" && !document.fullscreenElement) {
             try {
@@ -169,10 +197,16 @@ EM_JS(void, pixelram_install_web_handlers, (), {
             } catch (_) {}
         }
 
-        if (canvas.dataset.pixelramRelativeMouse === "1" && document.pointerLockElement !== canvas) {
+        if (canvas.dataset.pixelramRelativeMouse === "1" &&
+            document.pointerLockElement !== canvas &&
+            performance.now() - relativeMouseUnlockTime >= 500) {
             try {
-                canvas.requestPointerLock();
-            } catch (_) {}
+                const request = canvas.requestPointerLock();
+                if (request && typeof request.then === "function")
+                    await request;
+            } catch (_) {
+                /* A later click may try again. */
+            }
         }
     });
 
@@ -1284,6 +1318,7 @@ typedef struct {
     double next_present_time;
 
     bool mouse_relative;
+    bool explicit_presented;
 
     pixel_key_event key_queue[PIXELRAM_KEY_QUEUE_SIZE];
     unsigned int key_read;
@@ -1629,6 +1664,7 @@ bool screen_open(int width, int height, pixel_mode mode, const char *title) {
 
     pr.initialized = true;
     pr.mouse_relative = false;
+    pr.explicit_presented = false;
 
 #ifdef PLATFORM_WEB
     web_mouse_x = 0;
@@ -1718,6 +1754,10 @@ void set_title(const char *title) {
 }
 
 void *framebuffer(void) {
+#ifdef PLATFORM_WEB
+    if (pr.initialized && !pr.explicit_presented)
+        pixelram_schedule_auto_present_js();
+#endif
     return pr.framebuffer;
 }
 
@@ -1748,6 +1788,10 @@ void set_palette(int index, uint8_t r, uint8_t g, uint8_t b) {
     pr.palette[index] = (Color){
         r, g, b, 255
     };
+#ifdef PLATFORM_WEB
+    if (pr.initialized && !pr.explicit_presented)
+        pixelram_schedule_auto_present_js();
+#endif
 }
 
 void get_palette(int index, uint8_t *r, uint8_t *g, uint8_t *b) {
@@ -1781,6 +1825,10 @@ bool use_palette(const char *name) {
                 palette->colors[j].r, palette->colors[j].g, palette->colors[j].b, 255
             };
         }
+#ifdef PLATFORM_WEB
+        if (pr.initialized && !pr.explicit_presented)
+            pixelram_schedule_auto_present_js();
+#endif
         return true;
     }
     return false;
@@ -1927,25 +1975,8 @@ void sleep_ms(uint32_t ms) {
 #endif
 }
 
-void present(void) {
-    if (!pr.initialized)
-        return;
-
-#ifdef PLATFORM_WEB
-    wait_for_target_frame();
-#endif
-
-    /*
-     * IMPORTANT for PLATFORM_WEB:
-     *
-     * raylib resets the one-frame IsKeyPressed()/IsKeyReleased()
-     * transition state during EndDrawing()/PollInputEvents().
-     *
-     * Therefore we must copy those transitions into our own queue
-     * BEFORE EndDrawing().
-     *
-     * DOOM consumes the queued events on the following game tick.
-     */
+static void present_current_frame(void) {
+    /* raylib clears one-frame input transitions in EndDrawing(). */
     pump_key_events();
 #ifdef PLATFORM_WEB
     pump_mouse_events();
@@ -1953,11 +1984,6 @@ void present(void) {
     framebuffer_to_rgba();
 
 #ifdef PLATFORM_WEB
-    /*
-     * Keep the last presented CPU framebuffer available to the web shell.
-     * This makes a single present() persistent for features such as the CRT
-     * filter even after main() has returned.
-     */
     pixelram_capture_frame_js(
         (const unsigned char *)pr.rgba,
         pr.width,
@@ -1970,6 +1996,34 @@ void present(void) {
     ClearBackground(BLACK);
     DrawTexture(pr.texture, 0, 0, WHITE);
     EndDrawing();
+}
+
+#ifdef PLATFORM_WEB
+EMSCRIPTEN_KEEPALIVE
+void pixelram_web_auto_present(void) {
+    if (!pr.initialized || pr.explicit_presented)
+        return;
+
+    /*
+     * Before a program opts into explicit present(), display framebuffer
+     * changes on the next browser frame. Tiny one-shot examples therefore
+     * work naturally while games keep explicit double buffering.
+     */
+    present_current_frame();
+}
+#endif
+
+void present(void) {
+    if (!pr.initialized)
+        return;
+
+    pr.explicit_presented = true;
+
+#ifdef PLATFORM_WEB
+    wait_for_target_frame();
+#endif
+
+    present_current_frame();
 }
 
 bool key_down(pixel_key key) {
@@ -2156,12 +2210,20 @@ uint32_t ticks_ms(void) {
     return (uint32_t)(GetTime() * 1000.0);
 }
 
+static void framebuffer_changed(void) {
+#ifdef PLATFORM_WEB
+    if (pr.initialized && !pr.explicit_presented)
+        pixelram_schedule_auto_present_js();
+#endif
+}
+
 void set_pixel(int x, int y, uint8_t index) {
     if (!pr.initialized || pr.mode != pixel_indexed8 || x < 0 || y < 0 || x >= pr.width || y >= pr.height) {
         return;
     }
     uint8_t *fb = (uint8_t *) pr.framebuffer;
     fb[y * pr.width + x] = index;
+    framebuffer_changed();
 }
 
 uint8_t get_pixel(int x, int y) {
@@ -2199,6 +2261,7 @@ void set_pixel_rgb(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
             break;
         }
     }
+    framebuffer_changed();
 }
 
 bool get_pixel_rgb(int x, int y, uint8_t *r, uint8_t *g, uint8_t *b) {
