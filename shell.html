@@ -77,6 +77,13 @@ function runArgs(){
  runWithArgs(splitArgs(argsInput.value))
 }
 argsRun.addEventListener('click',runArgs);
+window.PIXELRAM_TEXT_INPUT_ACTIVE=false;
+argsInput.addEventListener('focus',()=>{
+ window.PIXELRAM_TEXT_INPUT_ACTIVE=true
+});
+argsInput.addEventListener('blur',()=>{
+ window.PIXELRAM_TEXT_INPUT_ACTIVE=false
+});
 argsInput.addEventListener('keydown',e=>{
  e.stopPropagation();
  if(e.key==='Enter'){

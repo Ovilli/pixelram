@@ -238,6 +238,10 @@ EM_JS(void, pixelram_set_fullscreen_js, (int enabled), {
     if (!enabled && document.fullscreenElement)
         document.exitFullscreen().catch(() => {});
 });
+
+EM_JS(int, pixelram_web_text_input_active, (), {
+    return window.PIXELRAM_TEXT_INPUT_ACTIVE ? 1 : 0;
+});
 #endif
 
 #define PIXELRAM_KEY_QUEUE_SIZE 128
@@ -1555,6 +1559,18 @@ static void pump_key_events(void) {
     memset(pr.key_pressed_frame, 0, sizeof(pr.key_pressed_frame));
     memset(pr.key_released_frame, 0, sizeof(pr.key_released_frame));
 
+#ifdef PLATFORM_WEB
+    /*
+     * raylib/GLFW tracks browser keys globally, so DOM stopPropagation() on
+     * the ARGS input is not sufficient.  While an HTML text field owns the
+     * keyboard, drop PixelRAM's queued game events as well.
+     */
+    if (pixelram_web_text_input_active()) {
+        pr.key_read = pr.key_write;
+        return;
+    }
+#endif
+
     for (size_t i = 0; i < sizeof(key_map) / sizeof(key_map[0]); i++) {
         int key = key_map[i].raylib;
         if (IsKeyPressed(key)) {
@@ -2027,6 +2043,10 @@ void present(void) {
 }
 
 bool key_down(pixel_key key) {
+#ifdef PLATFORM_WEB
+    if (pixelram_web_text_input_active())
+        return false;
+#endif
     switch (key) {
         case pixel_key_shift:
             return modifier_down(KEY_LEFT_SHIFT, KEY_RIGHT_SHIFT);

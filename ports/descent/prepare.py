@@ -928,6 +928,26 @@ uint8_t Config_control_type = 0;
             "Descent browser mouse controls"
         )
 
+    # A saved/read Descent configuration can overwrite the initializer above.
+    # Force the browser build into the mouse control path at the point where
+    # controls are read each frame. Keyboard bindings continue to work there.
+    control_read_old = "\tif (Config_control_type == 5) \n\t{\n\t\t//---------  Read Mouse -----------"
+    control_read_new = """#ifdef __EMSCRIPTEN__
+\tConfig_control_type = CONTROL_MOUSE;
+#endif
+
+\tif (Config_control_type == 5)
+\t{
+\t\t//---------  Read Mouse -----------"""
+
+    if "Config_control_type = CONTROL_MOUSE;\n#endif\n\n\tif (Config_control_type == 5)" not in kconfig:
+        kconfig = replace_once(
+            kconfig,
+            control_read_old,
+            control_read_new,
+            "Descent browser per-frame mouse controls"
+        )
+
     kconfig_path.write_text(kconfig)
 
     # --------------------------------------------------------------
