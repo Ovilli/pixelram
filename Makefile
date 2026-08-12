@@ -294,7 +294,7 @@ prince-data:
 prince: prince-source prince-data | $(BUILD_DIR)
 	@echo "Building Prince of Persia for WebAssembly..."
 	$(EMCC) \
-		-O2 -std=c99 -D_GNU_SOURCE=1 \
+		-O2 -std=gnu99 -D_GNU_SOURCE=1 \
 		-Wall -Wno-unused-variable -Wno-unused-function \
 		-sUSE_SDL=2 \
 		-sUSE_SDL_IMAGE=2 \
