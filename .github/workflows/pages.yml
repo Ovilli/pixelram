@@ -33,11 +33,25 @@ jobs:
       - name: Install WebAssembly toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y emscripten cmake
+          sudo apt-get install -y cmake
+
+          # Ubuntu 24.04 ships Emscripten 3.1.6, whose bundled GLFW headers
+          # are too old for raylib 6.0. Use a pinned official emsdk instead.
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install 4.0.21
+          /tmp/emsdk/emsdk activate 4.0.21
+
+          source /tmp/emsdk/emsdk_env.sh
+          emcc --version
+
           git clone --depth 1 --branch 6.0 https://github.com/raysan5/raylib.git /tmp/raylib
           emcmake cmake -S /tmp/raylib -B /tmp/raylib-build \
             -DPLATFORM=Web -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/raylib-build -j2
+
+          echo "/tmp/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+          echo "EMSDK=/tmp/emsdk" >> "$GITHUB_ENV"
+          echo "EM_CONFIG=/tmp/emsdk/.emscripten" >> "$GITHUB_ENV"
 
       - name: Build live PixelRAM fire demo
         run: |
