@@ -162,7 +162,6 @@ DESCENT_REPO := https://github.com/InsanityBringer/ChocolateDescent.git
 DESCENT_COMMIT := 03cfb6e2dbfee75a041d27fdc45cf561467b8ea4
 DESCENT_ROOT := $(CACHE_DIR)/ChocolateDescent
 DESCENT_BUILD := $(DESCENT_ROOT)/build-wasm
-DESCENT_SHAREWARE_DIR := $(CACHE_DIR)/descent-shareware
 
 DESCENT_MUSIC_DIR := $(CACHE_DIR)/descent-music
 TSF_HEADER := $(DESCENT_MUSIC_DIR)/tsf.h
@@ -206,24 +205,23 @@ descent-source: descent-music | $(CACHE_DIR)
 	python3 ports/descent/prepare.py "$(DESCENT_ROOT)" "."
 	@echo "Chocolate Descent source ready."
 
+DESCENT_DATA_DIR := descent-data
+DESCENT_HOG := $(firstword $(wildcard $(DESCENT_DATA_DIR)/descent.hog $(DESCENT_DATA_DIR)/DESCENT.HOG descent.hog DESCENT.HOG))
+DESCENT_PIG := $(firstword $(wildcard $(DESCENT_DATA_DIR)/descent.pig $(DESCENT_DATA_DIR)/DESCENT.PIG descent.pig DESCENT.PIG))
+
 descent-data:
-	@if [ ! -f descent.hog ] && [ -f DESCENT.HOG ]; then cp DESCENT.HOG descent.hog; fi
-	@if [ ! -f descent.pig ] && [ -f DESCENT.PIG ]; then cp DESCENT.PIG descent.pig; fi
-	@if [ -f descent.hog ] && [ -f descent.pig ]; then \
-		echo "Using local Descent data: descent.hog + descent.pig"; \
-	else \
-		echo "No complete local Descent data set found; using the freely distributable Descent 1.4 shareware data."; \
-		python3 tools/fetch_shareware.py descent "$(DESCENT_SHAREWARE_DIR)"; \
+	@if [ -z "$(DESCENT_HOG)" ] || [ -z "$(DESCENT_PIG)" ]; then \
+		echo "Descent game data not found."; \
+		echo "Copy DESCENT.HOG and DESCENT.PIG from your Descent installation into:"; \
+		echo "  $(DESCENT_DATA_DIR)/"; \
+		echo "Lowercase filenames are accepted too."; \
+		exit 1; \
 	fi
+	@echo "Using local Descent data: $(DESCENT_HOG) + $(DESCENT_PIG)"
 
 descent: descent-source descent-data | $(BUILD_DIR)
-	@if [ -f descent.hog ] && [ -f descent.pig ]; then \
-		hog="descent.hog"; pig="descent.pig"; \
-	else \
-		hog="$(DESCENT_SHAREWARE_DIR)/descent.hog"; pig="$(DESCENT_SHAREWARE_DIR)/descent.pig"; \
-	fi; \
-	cp "$$hog" "$(DESCENT_ROOT)/descent.hog"; \
-	cp "$$pig" "$(DESCENT_ROOT)/descent.pig"
+	cp "$(DESCENT_HOG)" "$(DESCENT_ROOT)/descent.hog"
+	cp "$(DESCENT_PIG)" "$(DESCENT_ROOT)/descent.pig"
 	rm -rf "$(DESCENT_BUILD)"
 	emcmake cmake \
 		-S "$(DESCENT_ROOT)" \
@@ -249,7 +247,7 @@ descent: descent-source descent-data | $(BUILD_DIR)
 
 clean-descent:
 	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data "$(BUILD_DIR)"/descent.hog "$(BUILD_DIR)"/descent.pig
-	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)" "$(DESCENT_SHAREWARE_DIR)"
+	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)"
 
 
 

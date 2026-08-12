@@ -10,7 +10,7 @@ make prince
 
 `make games` builds all three.
 
-PixelRAM downloads and caches pinned engine/source dependencies under `.cache/`. DOOM and Descent can also fall back to their original freely distributable shareware data, so those two targets work out of the box. If you provide your own compatible full-game files, those are preferred automatically.
+PixelRAM downloads and caches pinned engine/source dependencies under `.cache/`. DOOM can also fall back to its original freely distributable shareware WAD. Descent and Prince of Persia intentionally require game data from your own copy.
 
 ## DOOM
 
@@ -32,23 +32,28 @@ The port uses doomgeneric and PixelRAM for the framebuffer/input layer. FreePats
 
 ## Descent
 
-Simply run:
+Copy these two files from your Descent installation into:
+
+```text
+descent-data/
+```
+
+Required files:
+
+```text
+DESCENT.HOG
+DESCENT.PIG
+```
+
+Lowercase filenames are accepted too. For compatibility with older PixelRAM checkouts, root-level `descent.hog` and `descent.pig` are also still recognized.
+
+Then run:
 
 ```sh
 make descent
 ```
 
-If these files are next to the Makefile, PixelRAM uses them:
-
-```text
-descent.hog
-descent.pig
-```
-
-Otherwise it downloads the original Descent 1.4 shareware archive, verifies the archive and extracted HOG/PIG files, and caches them under `.cache/descent-shareware/`.
-
-Chocolate Descent is based on the later registered D1 source and normally expects a 621-string text table, while the 1.4 shareware data contains the older 514-string table. The PixelRAM web preparation step keeps the shareware strings unchanged and supplies empty entries only for the registered-only tail so the seven-level shareware game can start. Full registered data is used unchanged when supplied locally.
-The shareware data also lacks the later external `descent.sng` song table. PixelRAM derives a fallback table from the HMP tracks actually present in the shareware HOG; registered data with its own song table is left unchanged.
+PixelRAM deliberately does not download substitute Descent game data. Using the full game files keeps the port on the same known-good data path as a normal Chocolate Descent installation, including the expected game resources and music tables.
 
 Output:
 
@@ -78,16 +83,13 @@ Output:
 build/prince.html
 ```
 
-The port uses the pinned SDLPoP source. PixelRAM mounts the complete local `prince-data/` directory as `/data`. Unlike DOOM and Descent, PixelRAM does **not** automatically download Prince of Persia game data because there is not a sufficiently clear redistribution grant for those original assets.
+The port uses the pinned SDLPoP source. PixelRAM mounts the complete local `prince-data/` directory as `/data`. Like Descent, PixelRAM does **not** automatically download Prince of Persia game data; use the files from your own game copy.
 
-## Shareware downloads
+## Shareware download
 
-`tools/fetch_shareware.py` performs the fallback downloads and refuses to use files whose SHA-256 does not match the known release. The fallback data is never committed to the repository.
+`tools/fetch_shareware.py` downloads only the DOOM 1.9 shareware `doom1.wad` fallback and refuses to use a file whose SHA-256 does not match the known release. The fallback data is never committed to the repository.
 
-The sources used are:
-
-- DOOM 1.9 shareware `doom1.wad`: Debian's `doom-wad-shareware` source package. The WAD's SHA-256 is `1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771`.
-- Descent 1.4 shareware: the unmodified `desc14sw.tar.gz` archive hosted by icculus.org. Debian game-data-packager records the archive and extracted HOG/PIG checksums and reproduces the shareware redistribution notice.
+The WAD comes from Debian's `doom-wad-shareware` source package. Its SHA-256 is `1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771`.
 
 ## Cleaning cached port sources
 
