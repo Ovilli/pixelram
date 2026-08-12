@@ -145,7 +145,8 @@ function runWithArgs(args){
  location.reload()
 }
 
-function toggleConsole(){const open=!consolePanel.classList.contains('open');consolePanel.classList.toggle('open',open);consolePanel.setAttribute('aria-hidden',open?'false':'true');if(open)requestAnimationFrame(()=>{logOutput.scrollTop=logOutput.scrollHeight});canvas.focus({preventScroll:true})}
+function setConsoleOpen(open){consolePanel.classList.toggle('open',open);consolePanel.setAttribute('aria-hidden',open?'false':'true');if(open)requestAnimationFrame(()=>{logOutput.scrollTop=logOutput.scrollHeight});canvas.focus({preventScroll:true})}
+function toggleConsole(){setConsoleOpen(!consolePanel.classList.contains('open'))}
 function toggleCrt(){crtEnabled=!crtEnabled;if(crtEnabled&&!crtRenderer.available){crtEnabled=false;console.warn('CRT shader unavailable; using normal framebuffer.');showToast('CRT unavailable');return}body.classList.toggle('crt',crtEnabled);showToast(crtEnabled?'CRT ON':'CRT OFF');canvas.focus({preventScroll:true})}
 async function toggleFullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){console.warn('Fullscreen request failed:',e)}canvas.focus({preventScroll:true})}
 let controlsTimer=0;
@@ -237,7 +238,7 @@ function resumeBrowserAudio(){
 }
 window.addEventListener('pointerdown',resumeBrowserAudio,{capture:true});
 window.addEventListener('keydown',resumeBrowserAudio,{capture:true});
-window.addEventListener('keydown',e=>{if(document.activeElement===argsInput)return;if((e.ctrlKey||e.metaKey)&&e.code==='KeyR')e.preventDefault();if(e.repeat)return;if(e.code==='Backquote'){e.preventDefault();e.stopImmediatePropagation();toggleConsole();return}if(e.code==='F6'){e.preventDefault();e.stopImmediatePropagation();toggleCrt();return}if(e.code==='F11'){e.preventDefault();e.stopImmediatePropagation();toggleFullscreen()}},true);
+window.addEventListener('keydown',e=>{if(document.activeElement===argsInput)return;if(e.code==='Escape'&&consolePanel.classList.contains('open')){e.preventDefault();e.stopImmediatePropagation();setConsoleOpen(false);return}if((e.ctrlKey||e.metaKey)&&e.code==='KeyR')e.preventDefault();if(e.repeat)return;if(e.code==='Backquote'){e.preventDefault();e.stopImmediatePropagation();toggleConsole();return}if(e.code==='F6'){e.preventDefault();e.stopImmediatePropagation();toggleCrt();return}if(e.code==='F11'){e.preventDefault();e.stopImmediatePropagation();toggleFullscreen()}},true);
 window.addEventListener('resize',layoutScreen);new MutationObserver(layoutScreen).observe(canvas,{attributes:true,attributeFilter:['width','height']});window.addEventListener('error',e=>{if(e.message)appendLog('stderr',[e.message])});window.addEventListener('unhandledrejection',e=>appendLog('stderr',['Unhandled promise rejection:',e.reason]));
 consolePanel.dataset.autoscroll='1';layoutScreen();requestAnimationFrame(crtLoop);requestAnimationFrame(()=>canvas.focus({preventScroll:true}));
 Module=Module||{};

@@ -179,15 +179,23 @@ EM_JS(void, pixelram_install_web_handlers, (), {
     let relativeMouseUnlockTime = -Infinity;
 
     document.addEventListener("pointerlockchange", () => {
+        const locked = document.pointerLockElement === canvas;
+
+        /*
+         * Pointer lock can change independently of set_mouse_relative(),
+         * especially when Escape releases it. Start every lock session with
+         * a clean relative-mouse frame so stale movement cannot leak across
+         * an unlock/relock boundary.
+         */
+        Module._pixelram_web_pointer_lock_changed(locked ? 1 : 0);
+
         /*
          * Escape is the browser's pointer-lock escape hatch. Chromium rejects
          * an immediate reacquire after that gesture, so require a fresh click
          * after a short grace period instead of leaking a rejected promise.
          */
-        if (document.pointerLockElement !== canvas &&
-            canvas.dataset.pixelramRelativeMouse === "1") {
+        if (!locked && canvas.dataset.pixelramRelativeMouse === "1")
             relativeMouseUnlockTime = performance.now();
-        }
     });
 
     canvas.addEventListener("click", async () => {
@@ -1392,6 +1400,16 @@ void pixelram_web_mouse_move(int dx, int dy) {
         return;
     web_mouse_dx += dx;
     web_mouse_dy += dy;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void pixelram_web_pointer_lock_changed(int locked) {
+    (void)locked;
+
+    web_mouse_dx = 0;
+    web_mouse_dy = 0;
+    web_mouse_frame_dx = 0;
+    web_mouse_frame_dy = 0;
 }
 
 #endif
