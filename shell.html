@@ -30,17 +30,25 @@ body.crt #screen-frame { box-shadow:0 18px 65px rgba(0,0,0,.62), 0 0 34px rgba(1
 #console-grip { flex:0 0 auto; height:4px; background:linear-gradient(to right, transparent 0, rgba(255,255,255,.08) 35%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.08) 65%, transparent 100%); }
 #toast { position:fixed; z-index:60; right:15px; bottom:15px; padding:6px 9px; border:1px solid rgba(255,255,255,.12); border-radius:4px; background:rgba(5,7,9,.84); color:#d7dde5; font-size:11px; opacity:0; transform:translateY(4px); transition:opacity 100ms ease, transform 100ms ease; pointer-events:none; }
 #toast.visible { opacity:1; transform:translateY(0); }
+
+#args-row { flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:2px 12px 8px; color:#8994a3; font-size:13px; }
+#args-input { flex:1 1 auto; min-width:0; padding:5px 7px; border:1px solid rgba(255,255,255,.14); border-radius:3px; outline:none; background:rgba(255,255,255,.035); color:#e7ebef; font:inherit; }
+#args-input:focus { border-color:rgba(255,255,255,.28); background:rgba(255,255,255,.055); }
+#args-run { appearance:none; border:1px solid rgba(255,255,255,.14); border-radius:3px; padding:5px 9px; background:rgba(255,255,255,.04); color:#cbd2da; font:inherit; cursor:pointer; }
+#args-run:hover { background:rgba(255,255,255,.08); color:#fff; }
+
 </style>
 </head>
 <body>
 <div id="stage"><div id="screen-frame"><canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas><canvas id="crt-canvas"></canvas></div></div>
-<div id="console-panel" aria-hidden="true"><div id="console-header"><span class="spacer"></span><button id="clear-log" type="button">clear</button></div><div id="log-output" role="log" aria-live="off"></div><div id="console-grip"></div></div>
+<div id="console-panel" aria-hidden="true"><div id="console-header"><span class="spacer"></span><button id="clear-log" type="button">clear</button></div><div id="args-row"><span>args</span><input id="args-input" type="text" spellcheck="false" autocomplete="off"><button id="args-run" type="button">run</button></div><div id="log-output" role="log" aria-live="off"></div><div id="console-grip"></div></div>
 <div id="toast"></div>
 <script>
 var Module;
 (() => {
 'use strict';
-const root=document.documentElement, body=document.body, stage=document.getElementById('stage'), frame=document.getElementById('screen-frame'), canvas=document.getElementById('canvas'), crtCanvas=document.getElementById('crt-canvas'), consolePanel=document.getElementById('console-panel'), logOutput=document.getElementById('log-output'), clearLog=document.getElementById('clear-log'), toast=document.getElementById('toast');
+const root=document.documentElement, body=document.body, stage=document.getElementById('stage'), frame=document.getElementById('screen-frame'), canvas=document.getElementById('canvas'), crtCanvas=document.getElementById('crt-canvas'), consolePanel=document.getElementById('console-panel'), logOutput=document.getElementById('log-output'), clearLog=document.getElementById('clear-log'), argsInput=document.getElementById('args-input'), argsRun=document.getElementById('args-run'), toast=document.getElementById('toast');
+const logicalCanvas=document.createElement('canvas'), logicalContext=logicalCanvas.getContext('2d',{alpha:false});if(logicalContext)logicalContext.imageSmoothingEnabled=false;
 const nativeConsole={log:console.log.bind(console),warn:console.warn.bind(console),error:console.error.bind(console)};
 const MAX_LOG_LINES=2000;
 const HIDDEN_RUNTIME_MESSAGES=[
@@ -52,10 +60,81 @@ function formatArg(v){if(typeof v==='string')return v;if(v instanceof Error)retu
 function appendLog(kind,args){const near=logOutput.scrollHeight-logOutput.scrollTop-logOutput.clientHeight<48;const line=document.createElement('div');line.className=`log-line ${kind}`;line.textContent=args.map(formatArg).join(' ');logOutput.appendChild(line);while(logOutput.childElementCount>MAX_LOG_LINES)logOutput.removeChild(logOutput.firstElementChild);if(near||consolePanel.dataset.autoscroll!=='0')logOutput.scrollTop=logOutput.scrollHeight}
 console.log=(...a)=>{if(hiddenRuntimeMessage(a))return;nativeConsole.log(...a);appendLog('stdout',a)};console.warn=(...a)=>{if(hiddenRuntimeMessage(a))return;nativeConsole.warn(...a);appendLog('warn',a)};console.error=(...a)=>{if(hiddenRuntimeMessage(a))return;nativeConsole.error(...a);appendLog('stderr',a)};
 logOutput.addEventListener('scroll',()=>{const d=logOutput.scrollHeight-logOutput.scrollTop-logOutput.clientHeight;consolePanel.dataset.autoscroll=d<48?'1':'0'});
-clearLog.addEventListener('click',()=>{logOutput.textContent='';consolePanel.dataset.autoscroll='1';canvas.focus({preventScroll:true})});
+clearLog.addEventListener('click',()=>{
+ logOutput.textContent='';
+ consolePanel.dataset.autoscroll='1';
+ canvas.focus({preventScroll:true})
+});
+
+function refreshArgsInput(){
+ argsInput.value=activeArgs().map(quoteArg).join(' ')
+}
+refreshArgsInput();
+window.addEventListener('pixelram-args-ready',refreshArgsInput);
+
+function runArgs(){
+ runWithArgs(splitArgs(argsInput.value))
+}
+argsRun.addEventListener('click',runArgs);
+argsInput.addEventListener('keydown',e=>{
+ if(e.key==='Enter'){
+   e.preventDefault();
+   e.stopPropagation();
+   runArgs()
+ }
+});
 function showToast(m){toast.textContent=m;toast.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('visible'),800)}
 function currentPixelAspect(){const v=parseFloat(getComputedStyle(root).getPropertyValue('--pixel-aspect-ratio'));return Number.isFinite(v)&&v>0?v:1}
-function layoutScreen(){const w=Math.max(1,canvas.width||320), h=Math.max(1,canvas.height||200), aspect=(w*currentPixelAspect())/h, r=stage.getBoundingClientRect(), aw=Math.max(80,r.width-28), ah=Math.max(60,r.height-28);let cw=aw,ch=cw/aspect;if(ch>ah){ch=ah;cw=ch*aspect}cw=Math.max(1,Math.floor(cw));ch=Math.max(1,Math.floor(ch));frame.style.width=`${cw}px`;frame.style.height=`${ch}px`;const dpr=Math.min(window.devicePixelRatio||1,2), ow=Math.max(1,Math.round(cw*dpr)), oh=Math.max(1,Math.round(ch*dpr));if(crtCanvas.width!==ow||crtCanvas.height!==oh){crtCanvas.width=ow;crtCanvas.height=oh;crtRenderer.resize(ow,oh)}}
+function logicalSize(){const w=Number(window.PIXELRAM_LOGICAL_WIDTH)||canvas.width||320,h=Number(window.PIXELRAM_LOGICAL_HEIGHT)||canvas.height||200;return{w:Math.max(1,w),h:Math.max(1,h)}}
+function sourceCrop(){const l=logicalSize(),target=l.w/l.h,cw=Math.max(1,canvas.width),ch=Math.max(1,canvas.height),a=cw/ch;if(Math.abs(a-target)<0.0001)return{x:0,y:0,w:cw,h:ch};if(a>target){const w=ch*target;return{x:(cw-w)/2,y:0,w:w,h:ch}}const h=cw/target;return{x:0,y:(ch-h)/2,w:cw,h:h}}
+function displayAspect(){const a=Number(window.PIXELRAM_DISPLAY_ASPECT);if(Number.isFinite(a)&&a>0)return a;const l=logicalSize();return(l.w*currentPixelAspect())/l.h}
+function crtLogicalSize(logical){
+ const minDisplayPixelsPerSourcePixel=2.0;
+ const sx=crtCanvas.width/(logical.w*minDisplayPixelsPerSourcePixel);
+ const sy=crtCanvas.height/(logical.h*minDisplayPixelsPerSourcePixel);
+ const scale=Math.min(1,sx,sy);
+ if(scale>=1)return logical;
+ return{
+   w:Math.max(1,Math.floor(logical.w*scale)),
+   h:Math.max(1,Math.floor(logical.h*scale))
+ }
+}
+function layoutSourceCanvas(fw,fh){if(!window.PIXELRAM_LOGICAL_WIDTH||!window.PIXELRAM_LOGICAL_HEIGHT){canvas.style.left='0';canvas.style.top='0';canvas.style.width='100%';canvas.style.height='100%';return}const c=sourceCrop(),sx=fw/c.w,sy=fh/c.h;canvas.style.width=`${canvas.width*sx}px`;canvas.style.height=`${canvas.height*sy}px`;canvas.style.left=`${-c.x*sx}px`;canvas.style.top=`${-c.y*sy}px`}
+function layoutScreen(){const aspect=displayAspect(),r=stage.getBoundingClientRect(),aw=Math.max(80,r.width-28),ah=Math.max(60,r.height-28);let cw=aw,ch=cw/aspect;if(ch>ah){ch=ah;cw=ch*aspect}cw=Math.max(1,Math.floor(cw));ch=Math.max(1,Math.floor(ch));frame.style.width=`${cw}px`;frame.style.height=`${ch}px`;layoutSourceCanvas(cw,ch);const dpr=Math.min(window.devicePixelRatio||1,2),ow=Math.max(1,Math.round(cw*dpr)),oh=Math.max(1,Math.round(ch*dpr));if(crtCanvas.width!==ow||crtCanvas.height!==oh){crtCanvas.width=ow;crtCanvas.height=oh;crtRenderer.resize(ow,oh)}}
+
+function splitArgs(text){
+ const args=[];let cur='',quote='',escape=false;
+ for(let i=0;i<text.length;i++){
+   const ch=text[i];
+   if(escape){cur+=ch;escape=false;continue}
+   if(ch==='\\'){escape=true;continue}
+   if(quote){if(ch===quote){quote=''}else cur+=ch;continue}
+   if(ch==='"'||ch==="'"){quote=ch;continue}
+   if(/\s/.test(ch)){if(cur){args.push(cur);cur=''}}else cur+=ch
+ }
+ if(escape)cur+='\\';
+ if(cur)args.push(cur);
+ return args
+}
+function quoteArg(arg){
+ if(!/[\s"'\\]/.test(arg))return arg;
+ return '"' + arg.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"'
+}
+function activeArgs(){
+ if(window.Module && Array.isArray(window.Module.arguments))
+   return window.Module.arguments.map(String);
+ if(Array.isArray(window.PIXELRAM_ARGS))
+   return window.PIXELRAM_ARGS.map(String);
+ return []
+}
+function argsStorageKey(){
+ return 'pixelram-args:' + location.pathname
+}
+function runWithArgs(args){
+ sessionStorage.setItem(argsStorageKey(),JSON.stringify(args));
+ location.reload()
+}
+
 function toggleConsole(){const open=!consolePanel.classList.contains('open');consolePanel.classList.toggle('open',open);consolePanel.setAttribute('aria-hidden',open?'false':'true');if(open)requestAnimationFrame(()=>{logOutput.scrollTop=logOutput.scrollHeight});canvas.focus({preventScroll:true})}
 function toggleCrt(){crtEnabled=!crtEnabled;if(crtEnabled&&!crtRenderer.available){crtEnabled=false;console.warn('CRT shader unavailable; using normal framebuffer.');showToast('CRT unavailable');return}body.classList.toggle('crt',crtEnabled);showToast(crtEnabled?'CRT ON':'CRT OFF');canvas.focus({preventScroll:true})}
 const crtRenderer=(()=>{
@@ -81,7 +160,57 @@ void main(){vec2 pos=warpUv(vUv);if(pos.x<0.0||pos.y<0.0||pos.x>1.0||pos.y>1.0){
  const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
  const aPos=gl.getAttribLocation(program,'aPos'),uSource=gl.getUniformLocation(program,'uSource'),uRes=gl.getUniformLocation(program,'uRes');
  function resize(w,h){gl.viewport(0,0,w,h)}
- function draw(){if(!crtEnabled||canvas.width<1||canvas.height<1)return;gl.useProgram(program);gl.viewport(0,0,crtCanvas.width,crtCanvas.height);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.enableVertexAttribArray(aPos);gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas)}catch(e){crtEnabled=false;body.classList.remove('crt');console.error('CRT framebuffer copy failed:',e);return}gl.uniform1i(uSource,0);gl.uniform2f(uRes,canvas.width,canvas.height);gl.drawArrays(gl.TRIANGLES,0,6)}
+ function draw(){
+  if(!crtEnabled||canvas.width<1||canvas.height<1)return;
+
+  const logical=logicalSize();
+  const crop=sourceCrop();
+  let source=window.PIXELRAM_FRAME_CANVAS||canvas;
+
+  if(!window.PIXELRAM_FRAME_CANVAS &&
+     logicalContext &&
+     (window.PIXELRAM_LOGICAL_WIDTH||window.PIXELRAM_LOGICAL_HEIGHT)){
+    if(logicalCanvas.width!==logical.w||logicalCanvas.height!==logical.h){
+      logicalCanvas.width=logical.w;
+      logicalCanvas.height=logical.h;
+      logicalContext.imageSmoothingEnabled=false
+    }
+    logicalContext.clearRect(0,0,logical.w,logical.h);
+    logicalContext.imageSmoothingEnabled=false;
+    logicalContext.drawImage(
+      canvas,
+      crop.x,crop.y,crop.w,crop.h,
+      0,0,logical.w,logical.h
+    );
+    source=logicalCanvas
+  }
+
+  const crtRes=crtLogicalSize(logical);
+
+  gl.useProgram(program);
+  gl.viewport(0,0,crtCanvas.width,crtCanvas.height);
+  gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D,texture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+
+  try{
+    gl.texImage2D(
+      gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source
+    )
+  }catch(e){
+    crtEnabled=false;
+    body.classList.remove('crt');
+    console.error('CRT framebuffer copy failed:',e);
+    return
+  }
+
+  gl.uniform1i(uSource,0);
+  gl.uniform2f(uRes,crtRes.w,crtRes.h);
+  gl.drawArrays(gl.TRIANGLES,0,6)
+ }
  return{available:true,resize,draw};
 })();
 function crtLoop(){if(crtEnabled)crtRenderer.draw();requestAnimationFrame(crtLoop)}
@@ -96,7 +225,10 @@ window.addEventListener('keydown',resumeBrowserAudio,{capture:true});
 window.addEventListener('keydown',e=>{if(e.repeat)return;if(e.code==='Backquote'){e.preventDefault();e.stopImmediatePropagation();toggleConsole();return}if(e.code==='F6'){e.preventDefault();e.stopImmediatePropagation();toggleCrt()}},true);
 window.addEventListener('resize',layoutScreen);new MutationObserver(layoutScreen).observe(canvas,{attributes:true,attributeFilter:['width','height']});window.addEventListener('error',e=>{if(e.message)appendLog('stderr',[e.message])});window.addEventListener('unhandledrejection',e=>appendLog('stderr',['Unhandled promise rejection:',e.reason]));
 consolePanel.dataset.autoscroll='1';layoutScreen();requestAnimationFrame(crtLoop);requestAnimationFrame(()=>canvas.focus({preventScroll:true}));
-Module={canvas,print:t=>console.log(t),printErr:t=>console.error(t)};
+Module=Module||{};
+Module.canvas=canvas;
+Module.print=t=>console.log(t);
+Module.printErr=t=>console.error(t);
 })();
 </script>
 {{{ SCRIPT }}}

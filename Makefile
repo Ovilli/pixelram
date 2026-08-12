@@ -17,7 +17,7 @@ WEB_FLAGS := \
 	-sSINGLE_FILE_BINARY_ENCODE=0 \
 	--shell-file $(SHELL_FILE)
 
-.PHONY: all clean palettes test $(EXAMPLES) games \
+.PHONY: all clean palettes test $(EXAMPLES) games prince prince-source clean-prince \
 	doom doom-source doom-data doom-music clean-doom \
 	descent descent-source descent-data descent-music clean-descent
 
@@ -55,7 +55,7 @@ $(TEST_BINARY): tests/test_pixelram.c pixelram.c pixelram.h tests/stub/raylib.h 
 # Big ports
 # ======================================================================
 
-games: doom descent
+games: doom descent prince
 
 # ----------------------------------------------------------------------
 # DOOM
@@ -249,6 +249,65 @@ descent: descent-source descent-data | $(BUILD_DIR)
 clean-descent:
 	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data "$(BUILD_DIR)"/descent.hog "$(BUILD_DIR)"/descent.pig
 	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)"
+
+
+# ----------------------------------------------------------------------
+# Prince of Persia (SDLPoP) -- first WebAssembly pass
+# ----------------------------------------------------------------------
+
+PRINCE_REPO := https://github.com/NagyD/SDLPoP.git
+PRINCE_COMMIT := 3c5add5fb7f83d4ceb542823ab66d00146c4271b
+PRINCE_ROOT := $(CACHE_DIR)/SDLPoP
+PRINCE_SRC := $(PRINCE_ROOT)/src
+PRINCE_CONFIG := $(CACHE_DIR)/prince/SDLPoP.ini
+
+PRINCE_SOURCE_NAMES := \
+	main.c data.c \
+	seg000.c seg001.c seg002.c seg003.c seg004.c \
+	seg005.c seg006.c seg007.c seg008.c seg009.c \
+	seqtbl.c replay.c options.c lighting.c screenshot.c menu.c \
+	midi.c opl3.c stb_vorbis.c
+
+PRINCE_SOURCES := $(addprefix $(PRINCE_SRC)/,$(PRINCE_SOURCE_NAMES))
+
+prince-source: | $(CACHE_DIR)
+	@if [ ! -d "$(PRINCE_ROOT)/.git" ]; then \
+		echo "Downloading SDLPoP source..."; \
+		git clone "$(PRINCE_REPO)" "$(PRINCE_ROOT)"; \
+	fi
+	@git -C "$(PRINCE_ROOT)" checkout -q --detach "$(PRINCE_COMMIT)"
+	@git -C "$(PRINCE_ROOT)" reset -q --hard "$(PRINCE_COMMIT)"
+	@git -C "$(PRINCE_ROOT)" clean -q -fdx
+	@mkdir -p "$(dir $(PRINCE_CONFIG))"
+	python3 ports/prince/prepare_config.py "$(PRINCE_ROOT)/SDLPoP.ini" "$(PRINCE_CONFIG)"
+	@echo "SDLPoP source ready."
+
+prince: prince-source | $(BUILD_DIR)
+	@echo "Building Prince of Persia for WebAssembly..."
+	$(EMCC) \
+		-O2 -std=c99 -D_GNU_SOURCE=1 \
+		-Wall -Wno-unused-variable -Wno-unused-function \
+		-sUSE_SDL=2 \
+		-sUSE_SDL_IMAGE=2 \
+		-sSDL2_IMAGE_FORMATS='["png"]' \
+		-sASYNCIFY \
+		-sALLOW_MEMORY_GROWTH=1 \
+		-sFORCE_FILESYSTEM \
+		--pre-js ports/prince/prince_web.js \
+		--shell-file "$(SHELL_FILE)" \
+		-I"$(PRINCE_SRC)" \
+		$(PRINCE_SOURCES) \
+		-lm \
+		--preload-file "$(PRINCE_ROOT)/data@/data" \
+		--preload-file "$(PRINCE_CONFIG)@/SDLPoP.ini" \
+		-o "$(BUILD_DIR)/prince.html"
+	@echo
+	@echo "Ready: $(BUILD_DIR)/prince.html"
+
+clean-prince:
+	rm -f "$(BUILD_DIR)"/prince.html "$(BUILD_DIR)"/prince.js \
+	      "$(BUILD_DIR)"/prince.wasm "$(BUILD_DIR)"/prince.data
+	rm -rf "$(PRINCE_ROOT)" "$(CACHE_DIR)/prince"
 
 clean:
 	rm -rf "$(BUILD_DIR)"
