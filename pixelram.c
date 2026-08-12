@@ -209,11 +209,24 @@ EM_JS(void, pixelram_install_web_handlers, (), {
             document.pointerLockElement !== canvas &&
             performance.now() - relativeMouseUnlockTime >= 500) {
             try {
-                const request = canvas.requestPointerLock();
+                const request = canvas.requestPointerLock({
+                    unadjustedMovement: true
+                });
                 if (request && typeof request.then === "function")
                     await request;
-            } catch (_) {
-                /* A later click may try again. */
+            } catch (error) {
+                /*
+                 * Raw mouse input is preferable for FPS-style controls, but
+                 * fall back to ordinary pointer lock on browsers that do not
+                 * support unadjustedMovement.
+                 */
+                if (error && error.name === "NotSupportedError") {
+                    try {
+                        const fallback = canvas.requestPointerLock();
+                        if (fallback && typeof fallback.then === "function")
+                            await fallback;
+                    } catch (_) {}
+                }
             }
         }
     });
