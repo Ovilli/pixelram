@@ -4,8 +4,6 @@
 
 #include "platform/mouse.h"
 
-#include <stdio.h>
-
 #include "pixelram.h"
 
 
@@ -34,23 +32,6 @@ void mouse_get_delta(
         &x,
         &y
     );
-
-    static bool first_motion = true;
-
-    if (
-        first_motion &&
-        (x != 0 || y != 0)
-    )
-    {
-        printf(
-            "[descent] mouse_get_delta: raw=%d,%d scalar=%.2f\n",
-            x,
-            y,
-            MouseScalar
-        );
-
-        first_motion = false;
-    }
 
     if (dx)
         *dx =
