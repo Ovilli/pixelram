@@ -40,8 +40,21 @@ def sha256(path: Path) -> str:
 
 def download(url: str, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with urllib.request.urlopen(url) as response, destination.open("wb") as output:
-        shutil.copyfileobj(response, output)
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "PixelRAM/0.1 (+https://github.com/specht/pixelram)",
+            "Accept": "application/zip,application/octet-stream;q=0.9,*/*;q=0.8",
+        },
+    )
+    partial = destination.with_suffix(destination.suffix + ".part")
+
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response, partial.open("wb") as output:
+            shutil.copyfileobj(response, output)
+        partial.replace(destination)
+    finally:
+        partial.unlink(missing_ok=True)
 
 
 def extract_flat(archive: Path, destination: Path) -> None:
