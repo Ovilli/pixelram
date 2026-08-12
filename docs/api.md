@@ -10,17 +10,108 @@ This page documents the complete public interface in `pixelram.h`. PixelRAM inte
 
 ## Function overview
 
-| Area | Functions |
-| --- | --- |
-| Screen | `screen_open`, `screen_set_mode`, `screen_close`, `should_close`, `set_title`, `screen_width`, `screen_height`, `screen_pitch`, `screen_mode` |
-| Framebuffer | `framebuffer`, `framebuffer_size` |
-| Indexed pixels | `set_pixel`, `get_pixel` |
-| Direct-color pixels | `set_pixel_rgb`, `get_pixel_rgb`, `rgb565_pack` |
-| Palettes | `set_palette`, `get_palette`, `use_palette`, `palette_count`, `palette_name` |
-| Display | `present`, `wait_vblank`, `set_target_fps`, `set_pixel_aspect`, `set_fullscreen` |
-| Keyboard | `key_down`, `key_pressed`, `key_released`, `poll_key_event` |
-| Mouse | `mouse_position`, `mouse_delta`, `set_mouse_position`, `mouse_button_down`, `mouse_button_pressed`, `mouse_button_released`, `set_mouse_relative` |
-| Time | `seconds`, `ticks_ms`, `sleep_ms` |
+<style>
+.api-overview th,
+.api-overview td {
+  vertical-align: top;
+}
+</style>
+
+<table class="api-overview">
+  <thead>
+    <tr>
+      <th>Area</th>
+      <th>Functions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Screen</td>
+      <td>
+        <a href="#screen_open"><code>screen_open</code></a>,
+        <a href="#screen_set_mode"><code>screen_set_mode</code></a>,
+        <a href="#screen_close"><code>screen_close</code></a>,
+        <a href="#should_close"><code>should_close</code></a>,
+        <a href="#set_title"><code>set_title</code></a>,
+        <a href="#screen_width--screen_height"><code>screen_width</code></a>,
+        <a href="#screen_width--screen_height"><code>screen_height</code></a>,
+        <a href="#screen_pitch"><code>screen_pitch</code></a>,
+        <a href="#screen_mode"><code>screen_mode</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Framebuffer</td>
+      <td>
+        <a href="#framebuffer"><code>framebuffer</code></a>,
+        <a href="#framebuffer_size"><code>framebuffer_size</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Indexed pixels</td>
+      <td>
+        <a href="#set_pixel"><code>set_pixel</code></a>,
+        <a href="#get_pixel"><code>get_pixel</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Direct-color pixels</td>
+      <td>
+        <a href="#set_pixel_rgb"><code>set_pixel_rgb</code></a>,
+        <a href="#get_pixel_rgb"><code>get_pixel_rgb</code></a>,
+        <a href="#rgb565_pack"><code>rgb565_pack</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Palettes</td>
+      <td>
+        <a href="#set_palette"><code>set_palette</code></a>,
+        <a href="#get_palette"><code>get_palette</code></a>,
+        <a href="#use_palette"><code>use_palette</code></a>,
+        <a href="#palette_count"><code>palette_count</code></a>,
+        <a href="#palette_name"><code>palette_name</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Display</td>
+      <td>
+        <a href="#present"><code>present</code></a>,
+        <a href="#wait_vblank"><code>wait_vblank</code></a>,
+        <a href="#set_target_fps"><code>set_target_fps</code></a>,
+        <a href="#set_pixel_aspect"><code>set_pixel_aspect</code></a>,
+        <a href="#set_fullscreen"><code>set_fullscreen</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Keyboard</td>
+      <td>
+        <a href="#key_down"><code>key_down</code></a>,
+        <a href="#key_pressed"><code>key_pressed</code></a>,
+        <a href="#key_released"><code>key_released</code></a>,
+        <a href="#poll_key_event"><code>poll_key_event</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Mouse</td>
+      <td>
+        <a href="#mouse_position"><code>mouse_position</code></a>,
+        <a href="#mouse_delta"><code>mouse_delta</code></a>,
+        <a href="#set_mouse_position"><code>set_mouse_position</code></a>,
+        <a href="#mouse_button_down"><code>mouse_button_down</code></a>,
+        <a href="#mouse_button_pressed"><code>mouse_button_pressed</code></a>,
+        <a href="#mouse_button_released"><code>mouse_button_released</code></a>,
+        <a href="#set_mouse_relative"><code>set_mouse_relative</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Time</td>
+      <td>
+        <a href="#seconds"><code>seconds</code></a>,
+        <a href="#ticks_ms"><code>ticks_ms</code></a>,
+        <a href="#sleep_ms"><code>sleep_ms</code></a>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 The sections below describe each function in detail, including return values, edge cases, and short examples.
 
