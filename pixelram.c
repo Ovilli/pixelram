@@ -1347,6 +1347,8 @@ static int web_mouse_x = 0;
 static int web_mouse_y = 0;
 static int web_mouse_dx = 0;
 static int web_mouse_dy = 0;
+static int web_mouse_frame_dx = 0;
+static int web_mouse_frame_dy = 0;
 static bool web_mouse_position_valid = false;
 
 static unsigned int web_mouse_buttons_down = 0;
@@ -1687,6 +1689,8 @@ bool screen_open(int width, int height, pixel_mode mode, const char *title) {
     web_mouse_y = 0;
     web_mouse_dx = 0;
     web_mouse_dy = 0;
+    web_mouse_frame_dx = 0;
+    web_mouse_frame_dy = 0;
     web_mouse_position_valid = false;
     web_mouse_buttons_down = 0;
     web_mouse_pressed_pending = 0;
@@ -1996,6 +2000,17 @@ static void present_current_frame(void) {
     pump_key_events();
 #ifdef PLATFORM_WEB
     pump_mouse_events();
+
+    /*
+     * Browser pointer events arrive asynchronously between rendered frames.
+     * Snapshot their accumulated movement here so mouse_delta() behaves like
+     * raylib's GetMouseDelta(): every reader in the same program frame sees
+     * the same delta instead of the first reader consuming it.
+     */
+    web_mouse_frame_dx = web_mouse_dx;
+    web_mouse_frame_dy = web_mouse_dy;
+    web_mouse_dx = 0;
+    web_mouse_dy = 0;
 #endif
     framebuffer_to_rgba();
 
@@ -2151,15 +2166,10 @@ void mouse_position(int *x, int *y) {
 
 void mouse_delta(int *dx, int *dy) {
 #ifdef PLATFORM_WEB
-    int raw_dx = web_mouse_dx;
-    int raw_dy = web_mouse_dy;
-    web_mouse_dx = 0;
-    web_mouse_dy = 0;
-
     if (dx)
-        *dx = raw_dx;
+        *dx = web_mouse_frame_dx;
     if (dy)
-        *dy = raw_dy;
+        *dy = web_mouse_frame_dy;
 #else
     Vector2 d = GetMouseDelta();
     if (dx)
@@ -2213,6 +2223,8 @@ void set_mouse_relative(bool enabled) {
 #ifdef PLATFORM_WEB
     web_mouse_dx = 0;
     web_mouse_dy = 0;
+    web_mouse_frame_dx = 0;
+    web_mouse_frame_dy = 0;
     pixelram_set_relative_mouse_js(enabled ? 1 : 0);
 #else
     if (enabled)
