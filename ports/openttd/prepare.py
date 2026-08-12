@@ -39,7 +39,6 @@ def main() -> None:
         "    add_files(\n"
         "        pixelram_v.cpp\n"
         "        pixelram_v.h\n"
-        "        pixelram/pixelram.c\n"
         "        pixelram/pixelram.h\n"
         "        CONDITION EMSCRIPTEN AND OPENTTD_PIXELRAM\n"
         "    )\n\n",
@@ -60,10 +59,17 @@ def main() -> None:
         source / "CMakeLists.txt",
         "    # Allow heap-growth, and start with a bigger memory size.\n",
         "    if(OPENTTD_PIXELRAM)\n"
+        "        add_library(pixelram_runtime STATIC\n"
+        "            ${CMAKE_SOURCE_DIR}/src/video/pixelram/pixelram.c\n"
+        "        )\n"
+        "        target_include_directories(pixelram_runtime PRIVATE\n"
+        "            ${CMAKE_SOURCE_DIR}/src/video/pixelram\n"
+        "        )\n"
+        "        target_compile_definitions(pixelram_runtime PRIVATE PLATFORM_WEB)\n"
         "        target_include_directories(openttd_lib PRIVATE\n"
         "            ${CMAKE_SOURCE_DIR}/src/video/pixelram\n"
-        "            /opt/raylib/src\n"
         "        )\n"
+        "        target_link_libraries(openttd_lib PRIVATE pixelram_runtime)\n"
         "        target_link_libraries(WASM::WASM INTERFACE \"-lraylib\")\n"
         "        target_link_libraries(WASM::WASM INTERFACE \"-sUSE_GLFW=3\")\n"
         "        target_link_libraries(WASM::WASM INTERFACE \"-sASYNCIFY\")\n"

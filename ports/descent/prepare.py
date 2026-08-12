@@ -485,6 +485,65 @@ endif()
     text_path.write_text(text_source)
 
     # --------------------------------------------------------------
+    # Descent 1.4 shareware song-table compatibility.
+    # --------------------------------------------------------------
+
+    songs_path = source / "main_shared" / "songs.cpp"
+    songs_source = songs_path.read_text()
+
+    songs_old = """	fp = cfopen( "descent.sng", "rb" );
+	if ( fp == NULL )
+	{
+		Error( "Couldn't open descent.sng" );
+	}
+"""
+
+    songs_new = """	fp = cfopen( "descent.sng", "rb" );
+	if ( fp == NULL )
+	{
+#ifdef __EMSCRIPTEN__
+		static const char *fixed_songs[] = {
+			"descent.hmp", "briefing.hmp", "endlevel.hmp",
+			"endgame.hmp", "credits.hmp"
+		};
+		i = 0;
+		for (unsigned int n = 0; n < sizeof(fixed_songs) / sizeof(fixed_songs[0]); ++n)
+		{
+			memset(&Songs[i], 0, sizeof(Songs[i]));
+			strncpy(Songs[i].filename, fixed_songs[n], sizeof(Songs[i].filename) - 1);
+			++i;
+		}
+		for (int n = 1; n <= 22 && i < MAX_NUM_SONGS; ++n)
+		{
+			char name[16];
+			snprintf(name, sizeof(name), "game%02d.hmp", n);
+			CFILE *song = cfopen(name, "rb");
+			if (song == NULL) continue;
+			cfclose(song);
+			memset(&Songs[i], 0, sizeof(Songs[i]));
+			strncpy(Songs[i].filename, name, sizeof(Songs[i].filename) - 1);
+			++i;
+		}
+		Num_songs = i;
+		if (Num_songs <= SONG_FIRST_LEVEL_SONG)
+			Error("Shareware data contains no level music");
+		Songs_initialized = 1;
+		return;
+#else
+		Error( "Couldn't open descent.sng" );
+#endif
+	}
+"""
+
+    if songs_new not in songs_source:
+        songs_source = replace_once(
+            songs_source, songs_old, songs_new,
+            "songs.cpp missing descent.sng fallback"
+        )
+
+    songs_path.write_text(songs_source)
+
+    # --------------------------------------------------------------
     # Browser-safe game-loop FPS limiter.
     # --------------------------------------------------------------
 

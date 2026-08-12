@@ -48,6 +48,7 @@ descent.pig
 Otherwise it downloads the original Descent 1.4 shareware archive, verifies the archive and extracted HOG/PIG files, and caches them under `.cache/descent-shareware/`.
 
 Chocolate Descent is based on the later registered D1 source and normally expects a 621-string text table, while the 1.4 shareware data contains the older 514-string table. The PixelRAM web preparation step keeps the shareware strings unchanged and supplies empty entries only for the registered-only tail so the seven-level shareware game can start. Full registered data is used unchanged when supplied locally.
+The shareware data also lacks the later external `descent.sng` song table. PixelRAM derives a fallback table from the HMP tracks actually present in the shareware HOG; registered data with its own song table is left unchanged.
 
 Output:
 
