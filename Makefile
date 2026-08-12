@@ -17,7 +17,7 @@ WEB_FLAGS := \
 	-sSINGLE_FILE_BINARY_ENCODE=0 \
 	--shell-file $(SHELL_FILE)
 
-.PHONY: all clean palettes test $(EXAMPLES) games prince prince-source clean-prince \
+.PHONY: all clean palettes test $(EXAMPLES) games prince prince-source prince-data clean-prince \
 	doom doom-source doom-data doom-music clean-doom \
 	descent descent-source descent-data descent-music clean-descent
 
@@ -260,6 +260,7 @@ PRINCE_COMMIT := 3c5add5fb7f83d4ceb542823ab66d00146c4271b
 PRINCE_ROOT := $(CACHE_DIR)/SDLPoP
 PRINCE_SRC := $(PRINCE_ROOT)/src
 PRINCE_CONFIG := $(CACHE_DIR)/prince/SDLPoP.ini
+PRINCE_DATA_DIR := prince-data
 
 PRINCE_SOURCE_NAMES := \
 	main.c data.c \
@@ -280,9 +281,17 @@ prince-source: | $(CACHE_DIR)
 	@git -C "$(PRINCE_ROOT)" clean -q -fdx
 	@mkdir -p "$(dir $(PRINCE_CONFIG))"
 	python3 ports/prince/prepare_config.py "$(PRINCE_ROOT)/SDLPoP.ini" "$(PRINCE_CONFIG)"
+	python3 ports/prince/prepare_source.py "$(PRINCE_ROOT)"
 	@echo "SDLPoP source ready."
 
-prince: prince-source | $(BUILD_DIR)
+prince-data:
+	@if [ ! -f "$(PRINCE_DATA_DIR)/PRINCE.DAT" ]; then \
+		echo "Prince of Persia game data is missing."; \
+		echo "Copy the complete DOS game data set into prince-data/ and run make prince again."; \
+		exit 1; \
+	fi
+
+prince: prince-source prince-data | $(BUILD_DIR)
 	@echo "Building Prince of Persia for WebAssembly..."
 	$(EMCC) \
 		-O2 -std=c99 -D_GNU_SOURCE=1 \
@@ -298,7 +307,7 @@ prince: prince-source | $(BUILD_DIR)
 		-I"$(PRINCE_SRC)" \
 		$(PRINCE_SOURCES) \
 		-lm \
-		--preload-file "$(PRINCE_ROOT)/data@/data" \
+		--preload-file "$(PRINCE_DATA_DIR)@/data" \
 		--preload-file "$(PRINCE_CONFIG)@/SDLPoP.ini" \
 		-o "$(BUILD_DIR)/prince.html"
 	@echo
