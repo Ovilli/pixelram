@@ -71,6 +71,8 @@ FREEPATS_URL := https://ftp.debian.org/debian/pool/main/f/freepats/freepats_$(FR
 FREEPATS_DIR := $(CACHE_DIR)/doom-music
 FREEPATS_DEB := $(FREEPATS_DIR)/freepats.deb
 FREEPATS_ROOT := $(FREEPATS_DIR)/root
+DOOM_SHAREWARE_DIR := $(CACHE_DIR)/doom-shareware
+DOOM_SHAREWARE_WAD := $(DOOM_SHAREWARE_DIR)/doom1.wad
 
 DOOM_SOURCE_NAMES := \
 	dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c \
@@ -98,14 +100,11 @@ doom-source: | $(CACHE_DIR)
 
 doom-data:
 	@if [ ! -f doom1.wad ] && [ -f DOOM1.WAD ]; then cp DOOM1.WAD doom1.wad; fi
-	@if [ ! -f doom1.wad ]; then \
-		echo; \
-		echo "DOOM game data is missing."; \
-		echo; \
-		echo "Place doom1.wad next to this Makefile and run:"; \
-		echo "  make doom"; \
-		echo; \
-		exit 1; \
+	@if [ -f doom1.wad ]; then \
+		echo "Using local DOOM data: doom1.wad"; \
+	else \
+		echo "No local DOOM data found; using the freely distributable DOOM 1.9 shareware IWAD."; \
+		python3 tools/fetch_shareware.py doom "$(DOOM_SHAREWARE_WAD)"; \
 	fi
 
 $(FREEPATS_DEB):
@@ -144,13 +143,15 @@ doom: doom-source doom-data doom-music | $(BUILD_DIR)
 		--preload-file "$(FREEPATS_ROOT)/etc/timidity/freepats.cfg"@/timidity.cfg \
 		--preload-file "$(FREEPATS_ROOT)/usr/share/midi/freepats"@/usr/share/midi/freepats \
 		-o "$(BUILD_DIR)/doom.html"
-	cp -p doom1.wad "$(BUILD_DIR)/doom1.wad"
+	@wad="doom1.wad"; \
+		if [ ! -f "$$wad" ]; then wad="$(DOOM_SHAREWARE_WAD)"; fi; \
+		cp -p "$$wad" "$(BUILD_DIR)/doom1.wad"
 	@echo
 	@echo "Ready: $(BUILD_DIR)/doom.html"
 
 clean-doom:
 	rm -f "$(BUILD_DIR)"/doom.html "$(BUILD_DIR)"/doom.js "$(BUILD_DIR)"/doom.wasm "$(BUILD_DIR)"/doom.data "$(BUILD_DIR)"/doom1.wad
-	rm -rf "$(DOOM_ROOT)" "$(FREEPATS_DIR)"
+	rm -rf "$(DOOM_ROOT)" "$(FREEPATS_DIR)" "$(DOOM_SHAREWARE_DIR)"
 
 # ----------------------------------------------------------------------
 # Chocolate Descent
@@ -160,6 +161,7 @@ DESCENT_REPO := https://github.com/InsanityBringer/ChocolateDescent.git
 DESCENT_COMMIT := 03cfb6e2dbfee75a041d27fdc45cf561467b8ea4
 DESCENT_ROOT := $(CACHE_DIR)/ChocolateDescent
 DESCENT_BUILD := $(DESCENT_ROOT)/build-wasm
+DESCENT_SHAREWARE_DIR := $(CACHE_DIR)/descent-shareware
 
 DESCENT_MUSIC_DIR := $(CACHE_DIR)/descent-music
 TSF_HEADER := $(DESCENT_MUSIC_DIR)/tsf.h
@@ -206,23 +208,21 @@ descent-source: descent-music | $(CACHE_DIR)
 descent-data:
 	@if [ ! -f descent.hog ] && [ -f DESCENT.HOG ]; then cp DESCENT.HOG descent.hog; fi
 	@if [ ! -f descent.pig ] && [ -f DESCENT.PIG ]; then cp DESCENT.PIG descent.pig; fi
-	@if [ ! -f descent.hog ] || [ ! -f descent.pig ]; then \
-		echo; \
-		echo "Descent game data is missing."; \
-		echo; \
-		echo "Place these files next to this Makefile:"; \
-		echo "  descent.hog"; \
-		echo "  descent.pig"; \
-		echo; \
-		echo "Then run:"; \
-		echo "  make descent"; \
-		echo; \
-		exit 1; \
+	@if [ -f descent.hog ] && [ -f descent.pig ]; then \
+		echo "Using local Descent data: descent.hog + descent.pig"; \
+	else \
+		echo "No complete local Descent data set found; using the freely distributable Descent 1.4 shareware data."; \
+		python3 tools/fetch_shareware.py descent "$(DESCENT_SHAREWARE_DIR)"; \
 	fi
 
 descent: descent-source descent-data | $(BUILD_DIR)
-	cp descent.hog "$(DESCENT_ROOT)/descent.hog"
-	cp descent.pig "$(DESCENT_ROOT)/descent.pig"
+	@if [ -f descent.hog ] && [ -f descent.pig ]; then \
+		hog="descent.hog"; pig="descent.pig"; \
+	else \
+		hog="$(DESCENT_SHAREWARE_DIR)/descent.hog"; pig="$(DESCENT_SHAREWARE_DIR)/descent.pig"; \
+	fi; \
+	cp "$$hog" "$(DESCENT_ROOT)/descent.hog"; \
+	cp "$$pig" "$(DESCENT_ROOT)/descent.pig"
 	rm -rf "$(DESCENT_BUILD)"
 	emcmake cmake \
 		-S "$(DESCENT_ROOT)" \
@@ -241,14 +241,14 @@ descent: descent-source descent-data | $(BUILD_DIR)
 	@if [ -f "$(DESCENT_BUILD)/descent.js" ]; then cp "$(DESCENT_BUILD)/descent.js" "$(BUILD_DIR)/"; fi
 	@if [ -f "$(DESCENT_BUILD)/descent.wasm" ]; then cp "$(DESCENT_BUILD)/descent.wasm" "$(BUILD_DIR)/"; fi
 	@if [ -f "$(DESCENT_BUILD)/descent.data" ]; then cp "$(DESCENT_BUILD)/descent.data" "$(BUILD_DIR)/"; fi
-	cp -p descent.hog "$(BUILD_DIR)/descent.hog"
-	cp -p descent.pig "$(BUILD_DIR)/descent.pig"
+	cp -p "$(DESCENT_ROOT)/descent.hog" "$(BUILD_DIR)/descent.hog"
+	cp -p "$(DESCENT_ROOT)/descent.pig" "$(BUILD_DIR)/descent.pig"
 	@echo
 	@echo "Ready: $(BUILD_DIR)/descent.html"
 
 clean-descent:
 	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data "$(BUILD_DIR)"/descent.hog "$(BUILD_DIR)"/descent.pig
-	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)"
+	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)" "$(DESCENT_SHAREWARE_DIR)"
 
 
 # ----------------------------------------------------------------------
@@ -287,6 +287,7 @@ prince-source: | $(CACHE_DIR)
 prince-data:
 	@if [ ! -f "$(PRINCE_DATA_DIR)/PRINCE.DAT" ]; then \
 		echo "Prince of Persia game data is missing."; \
+		echo "PixelRAM does not automatically download Prince data because its redistribution status is not clear enough."; \
 		echo "Copy the complete DOS game data set into prince-data/ and run make prince again."; \
 		exit 1; \
 	fi

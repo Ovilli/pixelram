@@ -10,15 +10,17 @@ make prince
 
 `make games` builds all three.
 
-PixelRAM downloads and caches pinned engine/source dependencies under `.cache/`, but it does **not** redistribute the commercial game data. Supply that data from your own copy of each game.
+PixelRAM downloads and caches pinned engine/source dependencies under `.cache/`. DOOM and Descent can also fall back to their original freely distributable shareware data, so those two targets work out of the box. If you provide your own compatible full-game files, those are preferred automatically.
 
 ## DOOM
 
-Put `doom1.wad` next to the Makefile:
+Simply run:
 
 ```sh
 make doom
 ```
+
+If `doom1.wad` (or `DOOM1.WAD`) is next to the Makefile, PixelRAM uses it. Otherwise it downloads the original DOOM 1.9 shareware IWAD, verifies its SHA-256 checksum, and caches it under `.cache/doom-shareware/`. The shareware data contains the complete first episode.
 
 Output:
 
@@ -30,18 +32,20 @@ The port uses doomgeneric and PixelRAM for the framebuffer/input layer. FreePats
 
 ## Descent
 
-Put these files next to the Makefile:
+Simply run:
+
+```sh
+make descent
+```
+
+If these files are next to the Makefile, PixelRAM uses them:
 
 ```text
 descent.hog
 descent.pig
 ```
 
-Then run:
-
-```sh
-make descent
-```
+Otherwise it downloads the original Descent 1.4 shareware archive, verifies the archive and extracted HOG/PIG files, and caches them under `.cache/descent-shareware/`.
 
 Output:
 
@@ -71,11 +75,20 @@ Output:
 build/prince.html
 ```
 
-The port uses the pinned SDLPoP source. PixelRAM mounts the complete local `prince-data/` directory as `/data`; no Prince of Persia game assets are downloaded or committed by PixelRAM.
+The port uses the pinned SDLPoP source. PixelRAM mounts the complete local `prince-data/` directory as `/data`. Unlike DOOM and Descent, PixelRAM does **not** automatically download Prince of Persia game data because there is not a sufficiently clear redistribution grant for those original assets.
+
+## Shareware downloads
+
+`tools/fetch_shareware.py` performs the fallback downloads and refuses to use files whose SHA-256 does not match the known release. The fallback data is never committed to the repository.
+
+The sources used are:
+
+- DOOM 1.9 shareware `doom1.wad`: Debian's `doom-wad-shareware` source package. The WAD's SHA-256 is `1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771`.
+- Descent 1.4 shareware: the unmodified `desc14sw.tar.gz` archive hosted by icculus.org. Debian game-data-packager records the archive and extracted HOG/PIG checksums and reproduces the shareware redistribution notice.
 
 ## Cleaning cached port sources
 
-Each port has its own clean target when you want the pinned upstream source to be prepared again from scratch:
+Each port has its own clean target when you want the pinned upstream source and downloaded fallback data prepared again from scratch:
 
 ```sh
 make clean-doom
