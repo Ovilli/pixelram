@@ -8,6 +8,22 @@ nav_order: 8
 
 This page documents the complete public interface in `pixelram.h`. PixelRAM intentionally keeps that interface small: screen management, framebuffer access, pixels and palettes, presentation, input, and timing.
 
+## Function overview
+
+| Area | Functions |
+| --- | --- |
+| Screen | `screen_open`, `screen_set_mode`, `screen_close`, `should_close`, `set_title`, `screen_width`, `screen_height`, `screen_pitch`, `screen_mode` |
+| Framebuffer | `framebuffer`, `framebuffer_size` |
+| Indexed pixels | `set_pixel`, `get_pixel` |
+| Direct-color pixels | `set_pixel_rgb`, `get_pixel_rgb`, `rgb565_pack` |
+| Palettes | `set_palette`, `get_palette`, `use_palette`, `palette_count`, `palette_name` |
+| Display | `present`, `wait_vblank`, `set_target_fps`, `set_pixel_aspect`, `set_fullscreen` |
+| Keyboard | `key_down`, `key_pressed`, `key_released`, `poll_key_event` |
+| Mouse | `mouse_position`, `mouse_delta`, `set_mouse_position`, `mouse_button_down`, `mouse_button_pressed`, `mouse_button_released`, `set_mouse_relative` |
+| Time | `seconds`, `ticks_ms`, `sleep_ms` |
+
+The sections below describe each function in detail, including return values, edge cases, and short examples.
+
 ## Screen
 
 ### `screen_open`

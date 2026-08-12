@@ -15,18 +15,25 @@ It is deliberately different from Pixelflow Canvas. Pixelflow Canvas provides a 
 
 This is the real `examples/fire.c`, compiled to WebAssembly as part of the documentation deployment. Move the mouse over the bottom of the display to reveal the console, CRT, and fullscreen controls.
 
-<div class="pixelram-demo">
+<div class="pixelram-demo pixelram-demo-fire">
   <iframe src="demos/fire.html" title="PixelRAM fire demo" loading="lazy" allow="fullscreen"></iframe>
 </div>
 
 <style>
 .pixelram-demo {
   width: 100%;
-  aspect-ratio: 2 / 1;
   overflow: hidden;
   border-radius: 8px;
   background: #030405;
   box-shadow: 0 10px 35px rgba(0, 0, 0, .2);
+}
+
+.pixelram-demo-fire {
+  aspect-ratio: 2 / 1;
+}
+
+.pixelram-demo-screen {
+  aspect-ratio: 16 / 9;
 }
 
 .pixelram-demo iframe {
@@ -57,6 +64,10 @@ int main(void)
 In `pixel_indexed8` mode, each framebuffer byte is a palette index. PixelRAM starts with the classic VGA palette, where index `10` is bright green.
 
 For a tiny **web** program like this, `present()` is optional. PixelRAM automatically displays framebuffer changes until the program calls `present()` explicitly for the first time. This convenience is intended for one-shot browser examples.
+
+<div class="pixelram-demo pixelram-demo-screen">
+  <iframe src="demos/minimal.html" title="PixelRAM minimal example" loading="lazy" allow="fullscreen"></iframe>
+</div>
 
 ## Animation adds `present()`
 
@@ -92,6 +103,10 @@ int main(void)
 ```
 
 The first explicit `present()` switches a web program to the normal explicit frame model. PixelRAM targets **60 FPS by default**; call `set_target_fps(30)` or another value after `screen_open()` to choose a different cap.
+
+<div class="pixelram-demo pixelram-demo-screen">
+  <iframe src="demos/animation.html" title="PixelRAM animation example" loading="lazy" allow="fullscreen"></iframe>
+</div>
 
 ## Build the repository examples
 
