@@ -952,29 +952,29 @@ uint8_t Config_control_type = 0;
     # This runs after Descent has converted the raw deltas and applied its
     # pitch/heading bindings, so it shows where motion is being lost.
     controls_debug_old = "\tread_head_tracker();"
-    controls_debug_new = r"""#ifdef __EMSCRIPTEN__
-\t{
-\t\tstatic int pixelram_mouse_debug_count = 0;
+    controls_debug_new = """#ifdef __EMSCRIPTEN__
+	{
+		static int pixelram_mouse_debug_count = 0;
 
-\t\tif ((dx != 0 || dy != 0) && pixelram_mouse_debug_count < 12)
-\t\t{
-\t\t\tprintf(
-\t\t\t\t"[descent] controls: raw=%d,%d axis=%d,%d frame=%d "
-\t\t\t\t"bindings=%u,%u pitch=%d heading=%d\\n",
-\t\t\t\tdx, dy,
-\t\t\t\t(int)mouse_axis[0], (int)mouse_axis[1],
-\t\t\t\t(int)FrameTime,
-\t\t\t\t(unsigned)kc_mouse[13].value,
-\t\t\t\t(unsigned)kc_mouse[15].value,
-\t\t\t\t(int)Controls.pitch_time,
-\t\t\t\t(int)Controls.heading_time
-\t\t\t);
-\t\t\tpixelram_mouse_debug_count++;
-\t\t}
-\t}
+		if ((dx != 0 || dy != 0) && pixelram_mouse_debug_count < 12)
+		{
+			printf(
+				"[descent] controls: raw=%d,%d axis=%d,%d frame=%d "
+				"bindings=%u,%u pitch=%d heading=%d\\n",
+				dx, dy,
+				(int)mouse_axis[0], (int)mouse_axis[1],
+				(int)FrameTime,
+				(unsigned)kc_mouse[13].value,
+				(unsigned)kc_mouse[15].value,
+				(int)Controls.pitch_time,
+				(int)Controls.heading_time
+			);
+			pixelram_mouse_debug_count++;
+		}
+	}
 #endif
 
-\tread_head_tracker();"""
+	read_head_tracker();"""
 
     if "[descent] controls: raw=" not in kconfig:
         kconfig = replace_once(
