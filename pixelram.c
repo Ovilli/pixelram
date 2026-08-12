@@ -7,20 +7,20 @@
 #ifdef PLATFORM_WEB
 #include <emscripten.h>
 
-EM_ASYNC_JS(void, pixelram_wait_animation_frame, (), {
+EM_ASYNC_JS(void, pixelram_wait_animation_frame, (void), {
     await new Promise(resolve => requestAnimationFrame(resolve));
-});
+})
 
 EM_ASYNC_JS(void, pixelram_sleep_ms_js, (unsigned int ms), {
     await new Promise(resolve => setTimeout(resolve, ms));
-});
+})
 
 EM_JS(void, pixelram_set_pixel_aspect_js, (double ratio), {
     document.documentElement.style.setProperty("--pixel-aspect-ratio", String(ratio));
     window.dispatchEvent(new Event("resize"));
-});
+})
 
-EM_JS(void, pixelram_schedule_auto_present_js, (), {
+EM_JS(void, pixelram_schedule_auto_present_js, (void), {
     if (window.__pixelramAutoPresentScheduled)
         return;
 
@@ -68,9 +68,9 @@ EM_JS(void, pixelram_capture_frame_js,
     const size = width * height * 4;
     frame.image.data.set(HEAPU8.subarray(rgba, rgba + size));
     frame.context.putImageData(frame.image, 0, 0);
-});
+})
 
-EM_JS(void, pixelram_install_web_handlers, (), {
+EM_JS(void, pixelram_install_web_handlers, (void), {
     const canvas = Module.canvas;
     if (!canvas || canvas.dataset.pixelramHandlers === "1")
         return;
@@ -236,7 +236,7 @@ EM_JS(void, pixelram_install_web_handlers, (), {
             Module._pixelram_web_mouse_move(event.movementX | 0, event.movementY | 0);
         }
     });
-});
+})
 
 EM_JS(void, pixelram_set_relative_mouse_js, (int enabled), {
     const canvas = Module.canvas;
@@ -247,7 +247,7 @@ EM_JS(void, pixelram_set_relative_mouse_js, (int enabled), {
 
     if (!enabled && document.pointerLockElement === canvas)
         document.exitPointerLock();
-});
+})
 
 EM_JS(void, pixelram_set_fullscreen_js, (int enabled), {
     const canvas = Module.canvas;
@@ -258,11 +258,11 @@ EM_JS(void, pixelram_set_fullscreen_js, (int enabled), {
 
     if (!enabled && document.fullscreenElement)
         document.exitFullscreen().catch(() => {});
-});
+})
 
-EM_JS(int, pixelram_web_text_input_active, (), {
+EM_JS(int, pixelram_web_text_input_active, (void), {
     return window.PIXELRAM_TEXT_INPUT_ACTIVE ? 1 : 0;
-});
+})
 #endif
 
 #define PIXELRAM_KEY_QUEUE_SIZE 128

@@ -10,6 +10,7 @@ HTML := $(EXAMPLES:%=$(BUILD_DIR)/%.html)
 SHELL_FILE := shell.html
 
 WEB_FLAGS := \
+	-Wno-gcc-install-dir-libstdcxx \
 	-DPLATFORM_WEB \
 	-sUSE_GLFW=3 \
 	-sASYNCIFY \
