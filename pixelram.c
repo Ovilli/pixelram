@@ -32,7 +32,7 @@ EM_JS(void, pixelram_schedule_auto_present_js, (void), {
         if (Module._pixelram_web_auto_present)
             Module._pixelram_web_auto_present();
     });
-});
+})
 
 
 EM_JS(void, pixelram_capture_frame_js,
