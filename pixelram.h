@@ -11,8 +11,8 @@ extern "C" {
 
 #define PIXELRAM_VERSION_MAJOR 0
 #define PIXELRAM_VERSION_MINOR 1
-#define PIXELRAM_VERSION_PATCH 16
-#define PIXELRAM_VERSION "0.1.16"
+#define PIXELRAM_VERSION_PATCH 18
+#define PIXELRAM_VERSION "0.1.18"
 
 /*
  * PixelRAM is a small software framebuffer API.
@@ -181,6 +181,7 @@ static inline uint16_t rgb565_pack(uint8_t r, uint8_t g, uint8_t b) {
 
 /* Display -------------------------------------------------------------- */
 
+/* On the web, one-shot programs auto-present until the first explicit call. */
 void present(void);
 void wait_vblank(void);
 

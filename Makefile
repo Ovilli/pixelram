@@ -5,11 +5,12 @@ CFLAGS := -O2 -std=c11 -Wall -Wextra -Wpedantic
 
 BUILD_DIR := build
 CACHE_DIR := .cache
-EXAMPLES := minimal fire
+EXAMPLES := minimal animation fire
 HTML := $(EXAMPLES:%=$(BUILD_DIR)/%.html)
 SHELL_FILE := shell.html
 
 WEB_FLAGS := \
+	-Wno-gcc-install-dir-libstdcxx \
 	-DPLATFORM_WEB \
 	-sUSE_GLFW=3 \
 	-sASYNCIFY \
@@ -19,7 +20,8 @@ WEB_FLAGS := \
 
 .PHONY: all clean palettes test $(EXAMPLES) games prince prince-source prince-data clean-prince \
 	doom doom-source doom-data doom-music clean-doom \
-	descent descent-source descent-data descent-music clean-descent
+	descent descent-source descent-data descent-music clean-descent \
+	openttd openttd-source openttd-data openttd-host clean-openttd
 
 all: $(HTML)
 
@@ -71,6 +73,8 @@ FREEPATS_URL := https://ftp.debian.org/debian/pool/main/f/freepats/freepats_$(FR
 FREEPATS_DIR := $(CACHE_DIR)/doom-music
 FREEPATS_DEB := $(FREEPATS_DIR)/freepats.deb
 FREEPATS_ROOT := $(FREEPATS_DIR)/root
+DOOM_SHAREWARE_DIR := $(CACHE_DIR)/doom-shareware
+DOOM_SHAREWARE_WAD := $(DOOM_SHAREWARE_DIR)/doom1.wad
 
 DOOM_SOURCE_NAMES := \
 	dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c \
@@ -98,14 +102,11 @@ doom-source: | $(CACHE_DIR)
 
 doom-data:
 	@if [ ! -f doom1.wad ] && [ -f DOOM1.WAD ]; then cp DOOM1.WAD doom1.wad; fi
-	@if [ ! -f doom1.wad ]; then \
-		echo; \
-		echo "DOOM game data is missing."; \
-		echo; \
-		echo "Place doom1.wad next to this Makefile and run:"; \
-		echo "  make doom"; \
-		echo; \
-		exit 1; \
+	@if [ -f doom1.wad ]; then \
+		echo "Using local DOOM data: doom1.wad"; \
+	else \
+		echo "No local DOOM data found; using the freely distributable DOOM 1.9 shareware IWAD."; \
+		python3 tools/fetch_shareware.py doom "$(DOOM_SHAREWARE_WAD)"; \
 	fi
 
 $(FREEPATS_DEB):
@@ -144,13 +145,15 @@ doom: doom-source doom-data doom-music | $(BUILD_DIR)
 		--preload-file "$(FREEPATS_ROOT)/etc/timidity/freepats.cfg"@/timidity.cfg \
 		--preload-file "$(FREEPATS_ROOT)/usr/share/midi/freepats"@/usr/share/midi/freepats \
 		-o "$(BUILD_DIR)/doom.html"
-	cp -p doom1.wad "$(BUILD_DIR)/doom1.wad"
+	@wad="doom1.wad"; \
+		if [ ! -f "$$wad" ]; then wad="$(DOOM_SHAREWARE_WAD)"; fi; \
+		cp -p "$$wad" "$(BUILD_DIR)/doom1.wad"
 	@echo
 	@echo "Ready: $(BUILD_DIR)/doom.html"
 
 clean-doom:
 	rm -f "$(BUILD_DIR)"/doom.html "$(BUILD_DIR)"/doom.js "$(BUILD_DIR)"/doom.wasm "$(BUILD_DIR)"/doom.data "$(BUILD_DIR)"/doom1.wad
-	rm -rf "$(DOOM_ROOT)" "$(FREEPATS_DIR)"
+	rm -rf "$(DOOM_ROOT)" "$(FREEPATS_DIR)" "$(DOOM_SHAREWARE_DIR)"
 
 # ----------------------------------------------------------------------
 # Chocolate Descent
@@ -203,26 +206,23 @@ descent-source: descent-music | $(CACHE_DIR)
 	python3 ports/descent/prepare.py "$(DESCENT_ROOT)" "."
 	@echo "Chocolate Descent source ready."
 
+DESCENT_DATA_DIR := descent-data
+DESCENT_HOG := $(firstword $(wildcard $(DESCENT_DATA_DIR)/descent.hog $(DESCENT_DATA_DIR)/DESCENT.HOG descent.hog DESCENT.HOG))
+DESCENT_PIG := $(firstword $(wildcard $(DESCENT_DATA_DIR)/descent.pig $(DESCENT_DATA_DIR)/DESCENT.PIG descent.pig DESCENT.PIG))
+
 descent-data:
-	@if [ ! -f descent.hog ] && [ -f DESCENT.HOG ]; then cp DESCENT.HOG descent.hog; fi
-	@if [ ! -f descent.pig ] && [ -f DESCENT.PIG ]; then cp DESCENT.PIG descent.pig; fi
-	@if [ ! -f descent.hog ] || [ ! -f descent.pig ]; then \
-		echo; \
-		echo "Descent game data is missing."; \
-		echo; \
-		echo "Place these files next to this Makefile:"; \
-		echo "  descent.hog"; \
-		echo "  descent.pig"; \
-		echo; \
-		echo "Then run:"; \
-		echo "  make descent"; \
-		echo; \
+	@if [ -z "$(DESCENT_HOG)" ] || [ -z "$(DESCENT_PIG)" ]; then \
+		echo "Descent game data not found."; \
+		echo "Copy DESCENT.HOG and DESCENT.PIG from your Descent installation into:"; \
+		echo "  $(DESCENT_DATA_DIR)/"; \
+		echo "Lowercase filenames are accepted too."; \
 		exit 1; \
 	fi
+	@echo "Using local Descent data: $(DESCENT_HOG) + $(DESCENT_PIG)"
 
 descent: descent-source descent-data | $(BUILD_DIR)
-	cp descent.hog "$(DESCENT_ROOT)/descent.hog"
-	cp descent.pig "$(DESCENT_ROOT)/descent.pig"
+	cp "$(DESCENT_HOG)" "$(DESCENT_ROOT)/descent.hog"
+	cp "$(DESCENT_PIG)" "$(DESCENT_ROOT)/descent.pig"
 	rm -rf "$(DESCENT_BUILD)"
 	emcmake cmake \
 		-S "$(DESCENT_ROOT)" \
@@ -241,14 +241,74 @@ descent: descent-source descent-data | $(BUILD_DIR)
 	@if [ -f "$(DESCENT_BUILD)/descent.js" ]; then cp "$(DESCENT_BUILD)/descent.js" "$(BUILD_DIR)/"; fi
 	@if [ -f "$(DESCENT_BUILD)/descent.wasm" ]; then cp "$(DESCENT_BUILD)/descent.wasm" "$(BUILD_DIR)/"; fi
 	@if [ -f "$(DESCENT_BUILD)/descent.data" ]; then cp "$(DESCENT_BUILD)/descent.data" "$(BUILD_DIR)/"; fi
-	cp -p descent.hog "$(BUILD_DIR)/descent.hog"
-	cp -p descent.pig "$(BUILD_DIR)/descent.pig"
+	cp -p "$(DESCENT_ROOT)/descent.hog" "$(BUILD_DIR)/descent.hog"
+	cp -p "$(DESCENT_ROOT)/descent.pig" "$(BUILD_DIR)/descent.pig"
 	@echo
 	@echo "Ready: $(BUILD_DIR)/descent.html"
 
 clean-descent:
 	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data "$(BUILD_DIR)"/descent.hog "$(BUILD_DIR)"/descent.pig
 	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)"
+
+
+
+# ----------------------------------------------------------------------
+# OpenTTD -- free graphics, mouse-driven 800x600 port
+# ----------------------------------------------------------------------
+
+OPENTTD_REPO := https://github.com/OpenTTD/OpenTTD.git
+OPENTTD_VERSION := 15.3
+OPENTTD_ROOT := $(CACHE_DIR)/OpenTTD
+OPENTTD_HOST_BUILD := $(OPENTTD_ROOT)/build-host
+OPENTTD_WASM_BUILD := $(OPENTTD_ROOT)/build-pixelram
+OPENTTD_BASESET_DIR := $(CACHE_DIR)/openttd-data/baseset
+
+openttd-data: | $(CACHE_DIR)
+	python3 tools/fetch_openttd_assets.py "$(OPENTTD_BASESET_DIR)"
+
+openttd-source: | $(CACHE_DIR)
+	@if [ ! -d "$(OPENTTD_ROOT)/.git" ]; then \
+		echo "Downloading OpenTTD $(OPENTTD_VERSION) source..."; \
+		git clone --depth 1 --branch "$(OPENTTD_VERSION)" "$(OPENTTD_REPO)" "$(OPENTTD_ROOT)"; \
+	fi
+	@git -C "$(OPENTTD_ROOT)" reset -q --hard "$(OPENTTD_VERSION)"
+	@git -C "$(OPENTTD_ROOT)" clean -q -fdx
+	python3 ports/openttd/prepare.py "$(OPENTTD_ROOT)" "."
+	@echo "OpenTTD source ready."
+
+openttd-host: openttd-source
+	rm -rf "$(OPENTTD_HOST_BUILD)"
+	cmake \
+		-S "$(OPENTTD_ROOT)" \
+		-B "$(OPENTTD_HOST_BUILD)" \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DOPTION_TOOLS_ONLY=ON
+	cmake --build "$(OPENTTD_HOST_BUILD)" --target tools -j"$$(nproc)"
+
+openttd: openttd-data openttd-host | $(BUILD_DIR)
+	rm -rf "$(OPENTTD_WASM_BUILD)"
+	emcmake cmake \
+		-S "$(OPENTTD_ROOT)" \
+		-B "$(OPENTTD_WASM_BUILD)" \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DHOST_BINARY_DIR="$(abspath $(OPENTTD_HOST_BUILD))" \
+		-DOPTION_USE_ASSERTS=OFF \
+		-DOPENTTD_PIXELRAM=ON \
+		-DOPENTTD_PIXELRAM_BASESET_DIR="$(abspath $(OPENTTD_BASESET_DIR))"
+	cmake --build "$(OPENTTD_WASM_BUILD)" --target openttd -j"$$(nproc)"
+	rm -f "$(BUILD_DIR)"/openttd.html "$(BUILD_DIR)"/openttd.js \
+	      "$(BUILD_DIR)"/openttd.wasm "$(BUILD_DIR)"/openttd.data
+	cp "$(OPENTTD_WASM_BUILD)"/openttd.html "$(BUILD_DIR)/"
+	@if [ -f "$(OPENTTD_WASM_BUILD)/openttd.js" ]; then cp "$(OPENTTD_WASM_BUILD)/openttd.js" "$(BUILD_DIR)/"; fi
+	@if [ -f "$(OPENTTD_WASM_BUILD)/openttd.wasm" ]; then cp "$(OPENTTD_WASM_BUILD)/openttd.wasm" "$(BUILD_DIR)/"; fi
+	@if [ -f "$(OPENTTD_WASM_BUILD)/openttd.data" ]; then cp "$(OPENTTD_WASM_BUILD)/openttd.data" "$(BUILD_DIR)/"; fi
+	@echo
+	@echo "Ready: $(BUILD_DIR)/openttd.html"
+
+clean-openttd:
+	rm -f "$(BUILD_DIR)"/openttd.html "$(BUILD_DIR)"/openttd.js \
+	      "$(BUILD_DIR)"/openttd.wasm "$(BUILD_DIR)"/openttd.data
+	rm -rf "$(OPENTTD_ROOT)" "$(CACHE_DIR)/openttd-data"
 
 
 # ----------------------------------------------------------------------
@@ -287,6 +347,7 @@ prince-source: | $(CACHE_DIR)
 prince-data:
 	@if [ ! -f "$(PRINCE_DATA_DIR)/PRINCE.DAT" ]; then \
 		echo "Prince of Persia game data is missing."; \
+		echo "PixelRAM does not automatically download Prince data because its redistribution status is not clear enough."; \
 		echo "Copy the complete DOS game data set into prince-data/ and run make prince again."; \
 		exit 1; \
 	fi

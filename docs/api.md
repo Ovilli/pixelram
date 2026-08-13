@@ -1,12 +1,119 @@
 ---
 title: API reference
 layout: page
-nav_order: 9
+nav_order: 8
 ---
 
 # API reference
 
 This page documents the complete public interface in `pixelram.h`. PixelRAM intentionally keeps that interface small: screen management, framebuffer access, pixels and palettes, presentation, input, and timing.
+
+## Function overview
+
+<style>
+.api-overview th,
+.api-overview td {
+  vertical-align: top;
+}
+</style>
+
+<table class="api-overview">
+  <thead>
+    <tr>
+      <th>Area</th>
+      <th>Functions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Screen</td>
+      <td>
+        <a href="#screen_open"><code>screen_open</code></a>,
+        <a href="#screen_set_mode"><code>screen_set_mode</code></a>,
+        <a href="#screen_close"><code>screen_close</code></a>,
+        <a href="#should_close"><code>should_close</code></a>,
+        <a href="#set_title"><code>set_title</code></a>,
+        <a href="#screen_width--screen_height"><code>screen_width</code></a>,
+        <a href="#screen_width--screen_height"><code>screen_height</code></a>,
+        <a href="#screen_pitch"><code>screen_pitch</code></a>,
+        <a href="#screen_mode"><code>screen_mode</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Framebuffer</td>
+      <td>
+        <a href="#framebuffer"><code>framebuffer</code></a>,
+        <a href="#framebuffer_size"><code>framebuffer_size</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Indexed pixels</td>
+      <td>
+        <a href="#set_pixel"><code>set_pixel</code></a>,
+        <a href="#get_pixel"><code>get_pixel</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Direct-color pixels</td>
+      <td>
+        <a href="#set_pixel_rgb"><code>set_pixel_rgb</code></a>,
+        <a href="#get_pixel_rgb"><code>get_pixel_rgb</code></a>,
+        <a href="#rgb565_pack"><code>rgb565_pack</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Palettes</td>
+      <td>
+        <a href="#set_palette"><code>set_palette</code></a>,
+        <a href="#get_palette"><code>get_palette</code></a>,
+        <a href="#use_palette"><code>use_palette</code></a>,
+        <a href="#palette_count"><code>palette_count</code></a>,
+        <a href="#palette_name"><code>palette_name</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Display</td>
+      <td>
+        <a href="#present"><code>present</code></a>,
+        <a href="#wait_vblank"><code>wait_vblank</code></a>,
+        <a href="#set_target_fps"><code>set_target_fps</code></a>,
+        <a href="#set_pixel_aspect"><code>set_pixel_aspect</code></a>,
+        <a href="#set_fullscreen"><code>set_fullscreen</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Keyboard</td>
+      <td>
+        <a href="#key_down"><code>key_down</code></a>,
+        <a href="#key_pressed"><code>key_pressed</code></a>,
+        <a href="#key_released"><code>key_released</code></a>,
+        <a href="#poll_key_event"><code>poll_key_event</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Mouse</td>
+      <td>
+        <a href="#mouse_position"><code>mouse_position</code></a>,
+        <a href="#mouse_delta"><code>mouse_delta</code></a>,
+        <a href="#set_mouse_position"><code>set_mouse_position</code></a>,
+        <a href="#mouse_button_down"><code>mouse_button_down</code></a>,
+        <a href="#mouse_button_pressed"><code>mouse_button_pressed</code></a>,
+        <a href="#mouse_button_released"><code>mouse_button_released</code></a>,
+        <a href="#set_mouse_relative"><code>set_mouse_relative</code></a>
+      </td>
+    </tr>
+    <tr>
+      <td>Time</td>
+      <td>
+        <a href="#seconds"><code>seconds</code></a>,
+        <a href="#ticks_ms"><code>ticks_ms</code></a>,
+        <a href="#sleep_ms"><code>sleep_ms</code></a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+The sections below describe each function in detail, including return values, edge cases, and short examples.
 
 ## Screen
 
@@ -283,6 +390,8 @@ Makes the current software framebuffer visible. A normal PixelRAM program calls 
 
 PixelRAM targets 60 FPS by default. `present()` observes the target configured by `set_target_fps()` and also processes the input transitions used by `poll_key_event()`.
 
+On the web, simple one-shot programs do not have to call `present()`: until the first explicit `present()`, framebuffer changes are automatically displayed on the next browser frame. Calling `present()` once switches the program to the normal explicit frame-presentation model.
+
 ```c
 while (!should_close())
 {
@@ -410,9 +519,9 @@ Returns the current mouse position in PixelRAM screen coordinates. Either pointe
 void mouse_delta(int *dx, int *dy);
 ```
 
-Returns mouse movement since the previous backend update. Either pointer may be `NULL`.
+Returns mouse movement for the current backend frame. Either pointer may be `NULL`.
 
-When relative mouse mode is active in a browser, PixelRAM uses pointer-lock movement and returns the accumulated relative movement since the last `mouse_delta()` call.
+When relative mouse mode is active in a browser, PixelRAM uses pointer-lock movement. Browser movement is accumulated and snapshotted at the frame boundary, so multiple `mouse_delta()` calls during the same frame see the same delta instead of consuming one another.
 
 ### `set_mouse_position`
 

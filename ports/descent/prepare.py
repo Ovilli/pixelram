@@ -907,6 +907,50 @@ void S_WebMusicPump();
     )
 
     # --------------------------------------------------------------
+    # Browser control defaults.
+    # --------------------------------------------------------------
+
+    kconfig_path = source / "main_d1" / "kconfig.cpp"
+    kconfig = kconfig_path.read_text()
+
+    control_default_old = "uint8_t Config_control_type = 0;"
+    control_default_new = """#ifdef __EMSCRIPTEN__
+uint8_t Config_control_type = CONTROL_MOUSE;
+#else
+uint8_t Config_control_type = 0;
+#endif"""
+
+    if "Config_control_type = CONTROL_MOUSE" not in kconfig:
+        kconfig = replace_once(
+            kconfig,
+            control_default_old,
+            control_default_new,
+            "Descent browser mouse controls"
+        )
+
+    # A saved/read Descent configuration can overwrite the initializer above.
+    # Force the browser build into the mouse control path at the point where
+    # controls are read each frame. Keyboard bindings continue to work there.
+    control_read_old = "\tif (Config_control_type == 5) \n\t{\n\t\t//---------  Read Mouse -----------"
+    control_read_new = """#ifdef __EMSCRIPTEN__
+\tConfig_control_type = CONTROL_MOUSE;
+#endif
+
+\tif (Config_control_type == 5)
+\t{
+\t\t//---------  Read Mouse -----------"""
+
+    if "Config_control_type = CONTROL_MOUSE;\n#endif\n\n\tif (Config_control_type == 5)" not in kconfig:
+        kconfig = replace_once(
+            kconfig,
+            control_read_old,
+            control_read_new,
+            "Descent browser per-frame mouse controls"
+        )
+
+    kconfig_path.write_text(kconfig)
+
+    # --------------------------------------------------------------
     # Browser-friendly sleeps.
     # --------------------------------------------------------------
 

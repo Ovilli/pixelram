@@ -23,10 +23,10 @@ int main(void)
     /* Black -> red -> orange -> yellow -> white. */
     for (int i = 0; i < 16; i++)
     {
-        set_palette(i,      i * 8,       0,           0);
-        set_palette(i + 16, i * 8 + 128, i * 8,      0);
-        set_palette(i + 32, 255,         i * 8 + 128, i * 8);
-        set_palette(i + 48, 255,         255,         i * 8 + 128);
+        set_palette(i, i * 8, 0, 0);
+        set_palette(i + 16, i * 8 + 128, i * 8, 0);
+        set_palette(i + 32, 255, i * 8 + 128, i * 8);
+        set_palette(i + 48, 255, 255, i * 8 + 128);
     }
 
     while (!should_close())

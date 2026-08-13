@@ -1,7 +1,7 @@
 ---
 title: Keyboard and mouse
 layout: page
-nav_order: 5
+nav_order: 4
 ---
 
 # Keyboard and mouse

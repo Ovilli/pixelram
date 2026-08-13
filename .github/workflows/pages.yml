@@ -53,16 +53,18 @@ jobs:
           echo "EMSDK=/tmp/emsdk" >> "$GITHUB_ENV"
           echo "EM_CONFIG=/tmp/emsdk/.emscripten" >> "$GITHUB_ENV"
 
-      - name: Build live PixelRAM fire demo
+      - name: Build live PixelRAM demos
         run: |
           mkdir -p build
-          emcc -O2 -std=c11 -Wall -Wextra -Wpedantic \
-            -DPLATFORM_WEB -sUSE_GLFW=3 -sASYNCIFY \
-            -sSINGLE_FILE=1 -sSINGLE_FILE_BINARY_ENCODE=0 \
-            --shell-file shell.html -I. -I/tmp/raylib/src \
-            examples/fire.c pixelram.c \
-            -L/tmp/raylib-build/raylib -lraylib \
-            -o build/fire.html
+          for demo in minimal animation fire; do
+            emcc -O2 -std=c11 -Wall -Wextra -Wpedantic \
+              -DPLATFORM_WEB -sUSE_GLFW=3 -sASYNCIFY \
+              -sSINGLE_FILE=1 -sSINGLE_FILE_BINARY_ENCODE=0 \
+              --shell-file shell.html -I. -I/tmp/raylib/src \
+              "examples/${demo}.c" pixelram.c \
+              -L/tmp/raylib-build/raylib -lraylib \
+              -o "build/${demo}.html"
+          done
 
       - name: Setup Pages
         id: pages
@@ -77,7 +79,7 @@ jobs:
       - name: Add live demos to documentation
         run: |
           mkdir -p docs/_site/demos
-          cp build/fire.html docs/_site/demos/fire.html
+          cp build/minimal.html build/animation.html build/fire.html docs/_site/demos/
 
       - name: Upload documentation
         uses: actions/upload-pages-artifact@v5
