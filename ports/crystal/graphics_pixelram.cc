@@ -22,6 +22,7 @@
 
 #define DR_PCX_IMPLEMENTATION
 #include "dr_pcx.h"
+#define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
