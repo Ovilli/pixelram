@@ -167,13 +167,13 @@ async function toggleFullscreen(){try{if(document.fullscreenElement)await docume
 let controlsTimer=0;
 function hideDisplayControls(){clearTimeout(controlsTimer);frame.classList.remove('controls-visible')}
 function showDisplayControls(duration=1800){frame.classList.add('controls-visible');clearTimeout(controlsTimer);controlsTimer=setTimeout(hideDisplayControls,duration)}
-function controlsDuration(e){return e.pointerType==='touch'?4500:1800}
+function controlsDuration(e){return e.pointerType==='touch'?2800:1800}
 function updatePointer(e){const r=frame.getBoundingClientRect();if(r.width>0&&r.height>0){window.PIXELRAM_POINTER_X=Math.max(0,Math.min(319,Math.floor((e.clientX-r.left)*320/r.width)));window.PIXELRAM_POINTER_Y=Math.max(0,Math.min(199,Math.floor((e.clientY-r.top)*200/r.height)))}}
 consoleToggle.addEventListener('click',toggleConsole);
 crtToggle.addEventListener('click',toggleCrt);
 fullscreenToggle.addEventListener('click',toggleFullscreen);
 frame.addEventListener('pointermove',e=>{if(document.pointerLockElement)return;updatePointer(e);if(e.pointerType!=='touch')showDisplayControls(controlsDuration(e))});
-frame.addEventListener('pointerdown',e=>{if(document.pointerLockElement)return;updatePointer(e);showDisplayControls(controlsDuration(e))});
+frame.addEventListener('pointerdown',e=>{if(document.pointerLockElement)return;updatePointer(e);if(e.pointerType==='touch'){if(displayControls.contains(e.target))return;if(frame.classList.contains('controls-visible'))hideDisplayControls();else showDisplayControls(controlsDuration(e));return}showDisplayControls(controlsDuration(e))});
 frame.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')hideDisplayControls()});
 displayControls.addEventListener('pointerdown',e=>{if(!document.pointerLockElement)showDisplayControls(controlsDuration(e))});
 document.addEventListener('pointerdown',e=>{if(!consolePanel.classList.contains('open'))return;if(consolePanel.contains(e.target)||consoleToggle.contains(e.target))return;setConsoleOpen(false)},true);
