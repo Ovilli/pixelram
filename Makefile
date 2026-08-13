@@ -20,8 +20,8 @@ WEB_FLAGS := \
 
 .PHONY: all clean palettes test $(EXAMPLES) games prince prince-source prince-data clean-prince \
 	doom doom-source doom-data doom-music clean-doom \
+	crystal crystal-source crystal-data clean-crystal \
 	descent descent-source descent-data descent-music clean-descent \
-	openttd openttd-source openttd-data openttd-host clean-openttd
 
 all: $(HTML)
 
@@ -57,7 +57,7 @@ $(TEST_BINARY): tests/test_pixelram.c pixelram.c pixelram.h tests/stub/raylib.h 
 # Big ports
 # ======================================================================
 
-games: doom descent prince
+games: doom crystal descent prince
 
 # ----------------------------------------------------------------------
 # DOOM
@@ -156,6 +156,80 @@ clean-doom:
 	rm -rf "$(DOOM_ROOT)" "$(FREEPATS_DIR)" "$(DOOM_SHAREWARE_DIR)"
 
 # ----------------------------------------------------------------------
+# Crystal Caves (OpenCrystalCaves)
+# ----------------------------------------------------------------------
+
+CRYSTAL_REPO := https://github.com/OpenCrystalCaves/OpenCrystalCaves.git
+CRYSTAL_COMMIT := 68124d31bb81acde1dfbc98848856a059016c132
+CRYSTAL_ROOT := $(CACHE_DIR)/OpenCrystalCaves
+CRYSTAL_BUILD := $(CRYSTAL_ROOT)/build-pixelram
+CRYSTAL_STAGE := $(CACHE_DIR)/crystal-caves
+CRYSTAL_LOCAL_DATA_DIR := crystal-caves-data
+
+crystal-source: | $(CACHE_DIR)
+	@if [ ! -d "$(CRYSTAL_ROOT)/.git" ]; then \
+		echo "Downloading OpenCrystalCaves source..."; \
+		mkdir -p "$(CRYSTAL_ROOT)"; \
+		git -C "$(CRYSTAL_ROOT)" init -q; \
+		git -C "$(CRYSTAL_ROOT)" remote add origin "$(CRYSTAL_REPO)"; \
+		git -C "$(CRYSTAL_ROOT)" sparse-checkout init --cone; \
+		git -C "$(CRYSTAL_ROOT)" sparse-checkout set occ media; \
+	fi
+	@git -C "$(CRYSTAL_ROOT)" fetch -q --depth 1 --filter=blob:none origin "$(CRYSTAL_COMMIT)"
+	@git -C "$(CRYSTAL_ROOT)" checkout -q --detach FETCH_HEAD
+	@git -C "$(CRYSTAL_ROOT)" reset -q --hard FETCH_HEAD
+	@git -C "$(CRYSTAL_ROOT)" clean -q -fdx
+	@git -C "$(CRYSTAL_ROOT)" submodule update -q --init \
+		occ/external/AHEasing \
+		occ/external/unlzexe \
+		occ/external/simpleini
+	python3 ports/crystal/prepare.py "$(CRYSTAL_ROOT)" "$(CURDIR)"
+	@echo "OpenCrystalCaves source ready."
+
+crystal-data: crystal-source
+	@rm -rf "$(CRYSTAL_STAGE)"
+	@mkdir -p "$(CRYSTAL_STAGE)"
+	@cp -a "$(CRYSTAL_ROOT)/media" "$(CRYSTAL_STAGE)/media"
+	@if find "$(CRYSTAL_LOCAL_DATA_DIR)" -maxdepth 1 -type f -iname 'CC1.GFX' -print -quit 2>/dev/null | grep -q .; then \
+		echo "Using local Crystal Caves episode 1 data from $(CRYSTAL_LOCAL_DATA_DIR)/"; \
+		rm -rf "$(CRYSTAL_STAGE)/media/CC1"; \
+		mkdir -p "$(CRYSTAL_STAGE)/media/CC1"; \
+		for file in "$(CRYSTAL_LOCAL_DATA_DIR)"/*; do \
+			[ -f "$$file" ] || continue; \
+			name="$$(basename "$$file" | tr '[:lower:]' '[:upper:]')"; \
+			cp -p "$$file" "$(CRYSTAL_STAGE)/media/CC1/$$name"; \
+		done; \
+	else \
+		echo "No local Crystal Caves data found; using the shareware episode bundled with the pinned OpenCrystalCaves source."; \
+	fi
+	@test -f "$(CRYSTAL_STAGE)/media/CC1/CC1.GFX"
+
+crystal: crystal-source crystal-data | $(BUILD_DIR)
+	@echo "Building Crystal Caves for PixelRAM..."
+	rm -rf "$(CRYSTAL_BUILD)"
+	emcmake cmake \
+		-S "$(CRYSTAL_ROOT)/occ" \
+		-B "$(CRYSTAL_BUILD)" \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DPIXELRAM=ON \
+		-DPIXELRAM_ROOT="$(CURDIR)" \
+		-DCMAKE_C_FLAGS="-O2 -Wno-gcc-install-dir-libstdcxx -sUSE_SDL=2 -sUSE_SDL_MIXER=2" \
+		-DCMAKE_CXX_FLAGS="-O2 -Wno-gcc-install-dir-libstdcxx -sUSE_SDL=2 -sUSE_SDL_MIXER=2" \
+		-DCMAKE_EXE_LINKER_FLAGS="-sUSE_GLFW=3 -sUSE_SDL=2 -sUSE_SDL_MIXER=2 -sASYNCIFY -sALLOW_MEMORY_GROWTH=1 -sFORCE_FILESYSTEM --shell-file $(CURDIR)/$(SHELL_FILE) --preload-file $(CURDIR)/$(CRYSTAL_STAGE)/media@/media"
+	cmake --build "$(CRYSTAL_BUILD)" --target occ -j"$$(nproc)"
+	rm -f "$(BUILD_DIR)"/crystal.html "$(BUILD_DIR)"/crystal.js "$(BUILD_DIR)"/crystal.wasm "$(BUILD_DIR)"/crystal.data
+	cp "$(CRYSTAL_BUILD)/build/crystal.html" "$(BUILD_DIR)/"
+	@if [ -f "$(CRYSTAL_BUILD)/build/crystal.js" ]; then cp "$(CRYSTAL_BUILD)/build/crystal.js" "$(BUILD_DIR)/"; fi
+	@if [ -f "$(CRYSTAL_BUILD)/build/crystal.wasm" ]; then cp "$(CRYSTAL_BUILD)/build/crystal.wasm" "$(BUILD_DIR)/"; fi
+	@if [ -f "$(CRYSTAL_BUILD)/build/crystal.data" ]; then cp "$(CRYSTAL_BUILD)/build/crystal.data" "$(BUILD_DIR)/"; fi
+	@echo
+	@echo "Ready: $(BUILD_DIR)/crystal.html"
+
+clean-crystal:
+	rm -f "$(BUILD_DIR)"/crystal.html "$(BUILD_DIR)"/crystal.js "$(BUILD_DIR)"/crystal.wasm "$(BUILD_DIR)"/crystal.data
+	rm -rf "$(CRYSTAL_ROOT)" "$(CRYSTAL_STAGE)"
+
+# ----------------------------------------------------------------------
 # Chocolate Descent
 # ----------------------------------------------------------------------
 
@@ -249,67 +323,6 @@ descent: descent-source descent-data | $(BUILD_DIR)
 clean-descent:
 	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data "$(BUILD_DIR)"/descent.hog "$(BUILD_DIR)"/descent.pig
 	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)"
-
-
-
-# ----------------------------------------------------------------------
-# OpenTTD -- free graphics, mouse-driven 800x600 port
-# ----------------------------------------------------------------------
-
-OPENTTD_REPO := https://github.com/OpenTTD/OpenTTD.git
-OPENTTD_VERSION := 15.3
-OPENTTD_ROOT := $(CACHE_DIR)/OpenTTD
-OPENTTD_HOST_BUILD := $(OPENTTD_ROOT)/build-host
-OPENTTD_WASM_BUILD := $(OPENTTD_ROOT)/build-pixelram
-OPENTTD_BASESET_DIR := $(CACHE_DIR)/openttd-data/baseset
-
-openttd-data: | $(CACHE_DIR)
-	python3 tools/fetch_openttd_assets.py "$(OPENTTD_BASESET_DIR)"
-
-openttd-source: | $(CACHE_DIR)
-	@if [ ! -d "$(OPENTTD_ROOT)/.git" ]; then \
-		echo "Downloading OpenTTD $(OPENTTD_VERSION) source..."; \
-		git clone --depth 1 --branch "$(OPENTTD_VERSION)" "$(OPENTTD_REPO)" "$(OPENTTD_ROOT)"; \
-	fi
-	@git -C "$(OPENTTD_ROOT)" reset -q --hard "$(OPENTTD_VERSION)"
-	@git -C "$(OPENTTD_ROOT)" clean -q -fdx
-	python3 ports/openttd/prepare.py "$(OPENTTD_ROOT)" "."
-	@echo "OpenTTD source ready."
-
-openttd-host: openttd-source
-	rm -rf "$(OPENTTD_HOST_BUILD)"
-	cmake \
-		-S "$(OPENTTD_ROOT)" \
-		-B "$(OPENTTD_HOST_BUILD)" \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DOPTION_TOOLS_ONLY=ON
-	cmake --build "$(OPENTTD_HOST_BUILD)" --target tools -j"$$(nproc)"
-
-openttd: openttd-data openttd-host | $(BUILD_DIR)
-	rm -rf "$(OPENTTD_WASM_BUILD)"
-	emcmake cmake \
-		-S "$(OPENTTD_ROOT)" \
-		-B "$(OPENTTD_WASM_BUILD)" \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DHOST_BINARY_DIR="$(abspath $(OPENTTD_HOST_BUILD))" \
-		-DOPTION_USE_ASSERTS=OFF \
-		-DOPENTTD_PIXELRAM=ON \
-		-DOPENTTD_PIXELRAM_BASESET_DIR="$(abspath $(OPENTTD_BASESET_DIR))"
-	cmake --build "$(OPENTTD_WASM_BUILD)" --target openttd -j"$$(nproc)"
-	rm -f "$(BUILD_DIR)"/openttd.html "$(BUILD_DIR)"/openttd.js \
-	      "$(BUILD_DIR)"/openttd.wasm "$(BUILD_DIR)"/openttd.data
-	cp "$(OPENTTD_WASM_BUILD)"/openttd.html "$(BUILD_DIR)/"
-	@if [ -f "$(OPENTTD_WASM_BUILD)/openttd.js" ]; then cp "$(OPENTTD_WASM_BUILD)/openttd.js" "$(BUILD_DIR)/"; fi
-	@if [ -f "$(OPENTTD_WASM_BUILD)/openttd.wasm" ]; then cp "$(OPENTTD_WASM_BUILD)/openttd.wasm" "$(BUILD_DIR)/"; fi
-	@if [ -f "$(OPENTTD_WASM_BUILD)/openttd.data" ]; then cp "$(OPENTTD_WASM_BUILD)/openttd.data" "$(BUILD_DIR)/"; fi
-	@echo
-	@echo "Ready: $(BUILD_DIR)/openttd.html"
-
-clean-openttd:
-	rm -f "$(BUILD_DIR)"/openttd.html "$(BUILD_DIR)"/openttd.js \
-	      "$(BUILD_DIR)"/openttd.wasm "$(BUILD_DIR)"/openttd.data
-	rm -rf "$(OPENTTD_ROOT)" "$(CACHE_DIR)/openttd-data"
-
 
 # ----------------------------------------------------------------------
 # Prince of Persia (SDLPoP) -- first WebAssembly pass

@@ -4,9 +4,63 @@
 
 PixelRAM gives C programs the kind of screen that made early PC graphics fun: a block of memory full of pixels. There is no scene graph, no sprite engine, and no drawing API to learn first. Write pixels directly, use a palette if you want one, and build everything else yourself.
 
-That makes PixelRAM small enough for teaching, but fast enough for software renderers and ports such as DOOM, Descent, and SDLPoP. The same library can be used natively or compiled to WebAssembly for the browser.
+That makes PixelRAM small enough for teaching, but fast enough for software renderers and ports such as DOOM, Crystal Caves, Descent, and SDLPoP. The same library can be used natively or compiled to WebAssembly for the browser.
 
-## Start with fire
+## Smallest useful program
+
+For a one-shot browser demo, drawing can be this small:
+
+```c
+#include "pixelram.h"
+
+int main(void)
+{
+    if (!screen_open(320, 180, pixel_indexed8, "PixelRAM"))
+        return 1;
+
+    set_pixel(screen_width() / 2, screen_height() / 2, 10);
+    return 0;
+}
+```
+
+Color `10` is bright green in the default VGA palette. Web builds automatically show framebuffer changes until a program explicitly starts using `present()`, so a tiny one-shot example does not need a main loop. This auto-presentation is a browser convenience; portable/native animation code should use `present()` explicitly.
+
+## Add animation
+
+Animation introduces the normal PixelRAM frame loop. Clear the old frame, draw the new one, then present it:
+
+```c
+#include "pixelram.h"
+
+int main(void)
+{
+    if (!screen_open(320, 180, pixel_indexed8, "PixelRAM animation"))
+        return 1;
+
+    int x = 0;
+    int direction = 1;
+    int y = screen_height() / 2;
+
+    while (!should_close())
+    {
+        clear(0);
+
+        x += direction;
+        if (x == 0 || x == screen_width() - 1)
+            direction = -direction;
+
+        set_pixel(x, y, 10);
+        present();
+    }
+
+    screen_close();
+    return 0;
+}
+```
+
+The first explicit `present()` switches a web program from automatic one-shot presentation to the normal explicit frame model. From then on, call `present()` once after drawing each completed frame.
+
+## Fire
 
 This complete program creates the classic palette-based fire effect:
 
@@ -77,60 +131,6 @@ The live version is compiled from `examples/fire.c` whenever the documentation s
 
 **[Read the documentation →](https://specht.github.io/pixelram/)**
 
-## Smallest useful program
-
-For a one-shot browser demo, drawing can be this small:
-
-```c
-#include "pixelram.h"
-
-int main(void)
-{
-    if (!screen_open(320, 180, pixel_indexed8, "PixelRAM"))
-        return 1;
-
-    set_pixel(screen_width() / 2, screen_height() / 2, 10);
-    return 0;
-}
-```
-
-Color `10` is bright green in the default VGA palette. Web builds automatically show framebuffer changes until a program explicitly starts using `present()`, so a tiny one-shot example does not need a main loop. This auto-presentation is a browser convenience; portable/native animation code should use `present()` explicitly.
-
-## Add animation
-
-Animation introduces the normal PixelRAM frame loop. This example moves the same green pixel left and right:
-
-```c
-#include "pixelram.h"
-
-int main(void)
-{
-    if (!screen_open(320, 180, pixel_indexed8, "PixelRAM animation"))
-        return 1;
-
-    int x = 0;
-    int direction = 1;
-    int y = screen_height() / 2;
-
-    while (!should_close())
-    {
-        set_pixel(x, y, 0);
-
-        x += direction;
-        if (x == 0 || x == screen_width() - 1)
-            direction = -direction;
-
-        set_pixel(x, y, 10);
-        present();
-    }
-
-    screen_close();
-    return 0;
-}
-```
-
-The first explicit `present()` switches a web program from automatic one-shot presentation to the normal explicit frame model. From then on, call `present()` once after drawing each completed frame.
-
 ## Frame rate
 
 PixelRAM targets **60 FPS by default**. Change the cap at any time after `screen_open()`:
@@ -175,7 +175,7 @@ pixelram.h
 You can copy them into a project, add them to a template, or let a Makefile download a pinned release:
 
 ```make
-PIXELRAM_VERSION := v0.1.18
+PIXELRAM_VERSION := v0.1.19
 PIXELRAM_BASE := https://raw.githubusercontent.com/specht/pixelram/$(PIXELRAM_VERSION)
 PIXELRAM_DIR := vendor/pixelram
 
@@ -218,9 +218,11 @@ The source palette list lives in `tools/palettes.yaml`; `tools/generate_palettes
 
 PixelRAM intentionally stops at pixels and framebuffer memory. A line, circle, triangle rasterizer, raycaster, plasma effect, or software 3D renderer is something you can implement *on top* of the framebuffer rather than something the library hides.
 
-This keeps the central model visible:
+Clearing the framebuffer is the one whole-screen operation in the core API because it is fundamental to animation. It stays mode-specific, just like the pixel helpers:
 
 ```c
+clear(0);                 /* indexed mode */
+clear_rgb(20, 40, 80);    /* direct-color modes */
 set_pixel(x, y, color);
 int color = get_pixel(x, y);
 ```
@@ -244,11 +246,12 @@ Optional Makefile targets demonstrate that the same framebuffer API can support 
 
 ```sh
 make doom
+make crystal
 make descent
 make prince
 ```
 
-The engine source is downloaded and cached, while commercial game data is supplied separately. See [`PORTS.md`](PORTS.md) for the required files.
+The engine source is downloaded and cached. DOOM and Crystal Caves have shareware fallbacks; the other game ports use data from your own copy. See [`PORTS.md`](PORTS.md) for details.
 
 ## Documentation
 

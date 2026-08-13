@@ -11,8 +11,8 @@ extern "C" {
 
 #define PIXELRAM_VERSION_MAJOR 0
 #define PIXELRAM_VERSION_MINOR 1
-#define PIXELRAM_VERSION_PATCH 18
-#define PIXELRAM_VERSION "0.1.18"
+#define PIXELRAM_VERSION_PATCH 19
+#define PIXELRAM_VERSION "0.1.19"
 
 /*
  * PixelRAM is a small software framebuffer API.
@@ -150,6 +150,7 @@ size_t framebuffer_size(void);
  * set_pixel() and get_pixel() operate in pixel_indexed8 mode.
  * Out-of-bounds writes are ignored; out-of-bounds reads return 0.
  */
+void clear(uint8_t index);
 void set_pixel(int x, int y, uint8_t index);
 uint8_t get_pixel(int x, int y);
 
@@ -168,6 +169,7 @@ const char *palette_name(int index);
  * get_pixel_rgb() works in every mode; in pixel_indexed8 it resolves the
  * palette index to RGB. Out-of-bounds reads return false and write zeros.
  */
+void clear_rgb(uint8_t r, uint8_t g, uint8_t b);
 void set_pixel_rgb(int x, int y, uint8_t r, uint8_t g, uint8_t b);
 bool get_pixel_rgb(int x, int y, uint8_t *r, uint8_t *g, uint8_t *b);
 

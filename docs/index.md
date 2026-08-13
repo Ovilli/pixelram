@@ -10,15 +10,6 @@ PixelRAM is a tiny software framebuffer for fast, low-level pixel graphics and g
 
 It is deliberately different from Pixelflow Canvas. Pixelflow Canvas provides a canvas in Visual Studio Code and can be driven from different languages. PixelRAM is a compiled framebuffer library. The familiar programming model makes it possible to move a pixel algorithm from Pixelflow Canvas to much faster C/WebAssembly code without hiding the algorithm behind a graphics framework.
 
-<a id="live-fire"></a>
-## Live fire demo
-
-This is the real `examples/fire.c`, compiled to WebAssembly as part of the documentation deployment. Move the mouse over the bottom of the display to reveal the console, CRT, and fullscreen controls.
-
-<div class="pixelram-demo pixelram-demo-fire">
-  <iframe src="demos/fire.html" title="PixelRAM fire demo" loading="lazy" allow="fullscreen"></iframe>
-</div>
-
 <style>
 .pixelram-demo {
   width: 100%;
@@ -71,7 +62,7 @@ For a tiny **web** program like this, `present()` is optional. PixelRAM automati
 
 ## Animation adds `present()`
 
-Once a program animates, use an explicit frame loop. This example erases a green pixel, moves it, redraws it, and then presents the completed frame:
+Once a program animates, use an explicit frame loop. Clear the old frame, draw the new one, and then present the completed frame:
 
 ```c
 #include "pixelram.h"
@@ -87,7 +78,7 @@ int main(void)
 
     while (!should_close())
     {
-        set_pixel(x, y, 0);
+        clear(0);
 
         x += direction;
         if (x == 0 || x == screen_width() - 1)
@@ -107,6 +98,17 @@ The first explicit `present()` switches a web program to the normal explicit fra
 <div class="pixelram-demo pixelram-demo-screen">
   <iframe src="demos/animation.html" title="PixelRAM animation example" loading="lazy" allow="fullscreen"></iframe>
 </div>
+
+<a id="live-fire"></a>
+## Live fire demo
+
+This is the real `examples/fire.c`, compiled to WebAssembly as part of the documentation deployment. Move the pointer over the bottom of the display, or tap the display on a touch device, to reveal the console, CRT, and fullscreen controls.
+
+<div class="pixelram-demo pixelram-demo-fire">
+  <iframe src="demos/fire.html" title="PixelRAM fire demo" loading="lazy" allow="fullscreen"></iframe>
+</div>
+
+
 
 ## Build the repository examples
 

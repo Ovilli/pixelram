@@ -4,13 +4,14 @@ The normal `make` target stays small and builds only the teaching examples. Opti
 
 ```sh
 make doom
+make crystal
 make descent
 make prince
 ```
 
-`make games` builds all three.
+`make games` builds all four.
 
-PixelRAM downloads and caches pinned engine/source dependencies under `.cache/`. DOOM can also fall back to its original freely distributable shareware WAD. Descent and Prince of Persia intentionally require game data from your own copy.
+PixelRAM downloads and caches pinned engine/source dependencies under `.cache/`. DOOM and Crystal Caves have shareware fallbacks. Descent and Prince of Persia intentionally require game data from your own copy.
 
 ## DOOM
 
@@ -29,6 +30,32 @@ build/doom.html
 ```
 
 The port uses doomgeneric and PixelRAM for the framebuffer/input layer. FreePats is downloaded separately for General MIDI playback.
+
+## Crystal Caves
+
+Simply run:
+
+```sh
+make crystal
+```
+
+The pinned OpenCrystalCaves source contains the original Crystal Caves shareware episode, so no separate game-data download is required for the fallback build. PixelRAM stages that shareware episode automatically.
+
+If you have your own episode 1 data, copy the files into:
+
+```text
+crystal-caves-data/
+```
+
+When `CC1.GFX` is present there, the local data set replaces the bundled shareware `CC1` directory for the build. Lowercase filenames are accepted.
+
+Output:
+
+```text
+build/crystal.html
+```
+
+OpenCrystalCaves already draws through a small `Window` / `Surface` abstraction. The port implements that abstraction with plain RGBA memory: scaling, alpha blending, lines, rectangles, and surface blits live entirely inside the adapter and write to PixelRAM's framebuffer. SDL_mixer remains only for sound.
 
 ## Descent
 
@@ -85,11 +112,11 @@ build/prince.html
 
 The port uses the pinned SDLPoP source. PixelRAM mounts the complete local `prince-data/` directory as `/data`. Like Descent, PixelRAM does **not** automatically download Prince of Persia game data; use the files from your own game copy.
 
-## Shareware download
+## Shareware fallback data
 
-`tools/fetch_shareware.py` downloads only the DOOM 1.9 shareware `doom1.wad` fallback and refuses to use a file whose SHA-256 does not match the known release. The fallback data is never committed to the repository.
+`tools/fetch_shareware.py` downloads only the DOOM 1.9 shareware `doom1.wad` fallback and refuses to use a file whose SHA-256 does not match the known release. The WAD comes from Debian's `doom-wad-shareware` source package; its SHA-256 is `1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771`.
 
-The WAD comes from Debian's `doom-wad-shareware` source package. Its SHA-256 is `1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771`.
+Crystal Caves is different: the pinned OpenCrystalCaves source already contains its shareware episode under `media/CC1`, so `make crystal` uses that copy directly when `crystal-caves-data/` is absent. Neither fallback is committed to the PixelRAM repository.
 
 ## Cleaning cached port sources
 
@@ -97,34 +124,7 @@ Each port has its own clean target when you want the pinned upstream source and 
 
 ```sh
 make clean-doom
+make clean-crystal
 make clean-descent
 make clean-prince
-```
-
-## OpenTTD (experimental)
-
-OpenTTD is the first higher-resolution, mouse-driven PixelRAM port. It is also
-fully free: no Transport Tycoon Deluxe files are required.
-
-```sh
-make openttd
-```
-
-PixelRAM pins OpenTTD 15.3 and downloads the official free base sets directly
-from the OpenTTD project:
-
-- OpenGFX 8.0 (`SHA-256 43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be`)
-- OpenSFX 1.0.3 (`SHA-256 e0a218b7dd9438e701503b0f84c25a97c1c11b7c2f025323fb19d6db16ef3759`)
-- OpenMSX 0.4.2 (`SHA-256 5a4277a2e62d87f2952ea5020dc20fb2f6ffafdccf9913fbf35ad45ee30ec762`)
-
-The initial port uses OpenTTD's existing Emscripten game loop but replaces its
-active video/input backend with PixelRAM. OpenTTD draws directly into a
-PixelRAM RGBA framebuffer at 800x600 and uses its own software mouse cursor.
-Sound and music are disabled in this first milestone while the framebuffer and
-input port is stabilized.
-
-Output:
-
-```text
-build/openttd.html
 ```

@@ -1,7 +1,7 @@
 EMCC := emcc
 
 PROGRAM := main
-ARGS := 44-baseline.jpg
+ARGS := 
 
 CFLAGS := -O2 -std=c11 -Wall -Wextra -Wpedantic
 

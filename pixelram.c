@@ -2276,6 +2276,59 @@ static void framebuffer_changed(void) {
 #endif
 }
 
+void clear(uint8_t index) {
+    if (!pr.initialized || pr.mode != pixel_indexed8)
+        return;
+
+    memset(pr.framebuffer, index, pr.framebuffer_size);
+    framebuffer_changed();
+}
+
+void clear_rgb(uint8_t r, uint8_t g, uint8_t b) {
+    if (!pr.initialized || pr.mode == pixel_indexed8)
+        return;
+
+    size_t pixel_count = (size_t)pr.width * (size_t)pr.height;
+
+    switch (pr.mode) {
+        case pixel_indexed8:
+            return;
+
+        case pixel_rgb565: {
+            uint16_t value = rgb565_pack(r, g, b);
+            uint16_t *dst = (uint16_t *)pr.framebuffer;
+            for (size_t i = 0; i < pixel_count; i++)
+                dst[i] = value;
+            break;
+        }
+
+        case pixel_rgb24: {
+            uint8_t *dst = pr.framebuffer;
+            for (size_t i = 0; i < pixel_count; i++) {
+                dst[0] = r;
+                dst[1] = g;
+                dst[2] = b;
+                dst += 3;
+            }
+            break;
+        }
+
+        case pixel_rgba32: {
+            uint8_t *dst = pr.framebuffer;
+            for (size_t i = 0; i < pixel_count; i++) {
+                dst[0] = r;
+                dst[1] = g;
+                dst[2] = b;
+                dst[3] = 255;
+                dst += 4;
+            }
+            break;
+        }
+    }
+
+    framebuffer_changed();
+}
+
 void set_pixel(int x, int y, uint8_t index) {
     if (!pr.initialized || pr.mode != pixel_indexed8 || x < 0 || y < 0 || x >= pr.width || y >= pr.height) {
         return;
