@@ -62,7 +62,7 @@ For a tiny **web** program like this, `present()` is optional. PixelRAM automati
 
 ## Animation adds `present()`
 
-Once a program animates, use an explicit frame loop. This example erases a green pixel, moves it, redraws it, and then presents the completed frame:
+Once a program animates, use an explicit frame loop. Clear the old frame, draw the new one, and then present the completed frame:
 
 ```c
 #include "pixelram.h"
@@ -78,7 +78,7 @@ int main(void)
 
     while (!should_close())
     {
-        set_pixel(x, y, 0);
+        clear(0);
 
         x += direction;
         if (x == 0 || x == screen_width() - 1)

@@ -28,6 +28,12 @@ uint8_t color = get_pixel(20, 10);
 
 `set_pixel()` and `get_pixel()` operate only in `pixel_indexed8` mode.
 
+Use `clear()` to fill the entire indexed framebuffer with one palette index:
+
+```c
+clear(0);
+```
+
 ## Direct-color pixels
 
 Use `set_pixel_rgb()` in one of the RGB modes:
@@ -35,6 +41,14 @@ Use `set_pixel_rgb()` in one of the RGB modes:
 ```c
 set_pixel_rgb(20, 10, 255, 80, 20);
 ```
+
+Use `clear_rgb()` to fill the whole framebuffer in `pixel_rgb565`, `pixel_rgb24`, or `pixel_rgba32` mode:
+
+```c
+clear_rgb(20, 40, 80);
+```
+
+`clear_rgb()` does nothing in indexed mode; use `clear()` with a palette index there. In RGBA32 mode it writes alpha as 255.
 
 `get_pixel_rgb()` works in every mode. In indexed mode it resolves the stored palette index to its current RGB color.
 

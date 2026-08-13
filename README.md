@@ -27,7 +27,7 @@ Color `10` is bright green in the default VGA palette. Web builds automatically 
 
 ## Add animation
 
-Animation introduces the normal PixelRAM frame loop. This example moves the same green pixel left and right:
+Animation introduces the normal PixelRAM frame loop. Clear the old frame, draw the new one, then present it:
 
 ```c
 #include "pixelram.h"
@@ -43,7 +43,7 @@ int main(void)
 
     while (!should_close())
     {
-        set_pixel(x, y, 0);
+        clear(0);
 
         x += direction;
         if (x == 0 || x == screen_width() - 1)
@@ -218,9 +218,11 @@ The source palette list lives in `tools/palettes.yaml`; `tools/generate_palettes
 
 PixelRAM intentionally stops at pixels and framebuffer memory. A line, circle, triangle rasterizer, raycaster, plasma effect, or software 3D renderer is something you can implement *on top* of the framebuffer rather than something the library hides.
 
-This keeps the central model visible:
+Clearing the framebuffer is the one whole-screen operation in the core API because it is fundamental to animation. It stays mode-specific, just like the pixel helpers:
 
 ```c
+clear(0);                 /* indexed mode */
+clear_rgb(20, 40, 80);    /* direct-color modes */
 set_pixel(x, y, color);
 int color = get_pixel(x, y);
 ```

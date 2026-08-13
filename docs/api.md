@@ -49,6 +49,7 @@ This page documents the complete public interface in `pixelram.h`. PixelRAM inte
     <tr>
       <td>Indexed pixels</td>
       <td>
+        <a href="#clear"><code>clear</code></a>,
         <a href="#set_pixel"><code>set_pixel</code></a>,
         <a href="#get_pixel"><code>get_pixel</code></a>
       </td>
@@ -56,6 +57,7 @@ This page documents the complete public interface in `pixelram.h`. PixelRAM inte
     <tr>
       <td>Direct-color pixels</td>
       <td>
+        <a href="#clear_rgb"><code>clear_rgb</code></a>,
         <a href="#set_pixel_rgb"><code>set_pixel_rgb</code></a>,
         <a href="#get_pixel_rgb"><code>get_pixel_rgb</code></a>,
         <a href="#rgb565_pack"><code>rgb565_pack</code></a>
@@ -246,6 +248,20 @@ Returns the framebuffer size in bytes (`screen_pitch() * screen_height()`).
 
 These functions are for `pixel_indexed8` mode.
 
+### `clear`
+
+```c
+void clear(uint8_t index);
+```
+
+Fills the entire indexed framebuffer with one palette index. If the current mode is not `pixel_indexed8`, the call does nothing.
+
+```c
+clear(0);
+```
+
+This is useful at the start of an animation frame before drawing the new image.
+
 ### `set_pixel`
 
 ```c
@@ -275,6 +291,20 @@ c += get_pixel(x + 1, y);
 ```
 
 ## Direct-color pixels
+
+### `clear_rgb`
+
+```c
+void clear_rgb(uint8_t r, uint8_t g, uint8_t b);
+```
+
+Fills the entire framebuffer with one RGB color in `pixel_rgb565`, `pixel_rgb24`, or `pixel_rgba32` mode. In `pixel_indexed8` mode the call does nothing; use `clear()` with a palette index instead.
+
+In `pixel_rgba32` mode the alpha byte is written as 255.
+
+```c
+clear_rgb(20, 40, 80);
+```
 
 ### `set_pixel_rgb`
 

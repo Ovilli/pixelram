@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add `clear()` for indexed framebuffers and `clear_rgb()` for direct-color framebuffers
+- Use `clear()` in the animation example and document the clear → draw → present frame pattern
+
 ## 0.1.0
 
 Initial PixelRAM release.

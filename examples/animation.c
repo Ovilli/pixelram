@@ -11,7 +11,7 @@ int main(void)
 
     while (!should_close())
     {
-        set_pixel(x, y, 0);
+        clear(0);
 
         x += direction;
         if (x == 0 || x == screen_width() - 1)
