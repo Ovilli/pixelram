@@ -4,7 +4,7 @@
 
 PixelRAM gives C programs the kind of screen that made early PC graphics fun: a block of memory full of pixels. There is no scene graph, no sprite engine, and no drawing API to learn first. Write pixels directly, use a palette if you want one, and build everything else yourself.
 
-That makes PixelRAM small enough for teaching, but fast enough for software renderers and ports such as DOOM, Descent, and SDLPoP. The same library can be used natively or compiled to WebAssembly for the browser.
+That makes PixelRAM small enough for teaching, but fast enough for software renderers and ports such as DOOM, Crystal Caves, Descent, and SDLPoP. The same library can be used natively or compiled to WebAssembly for the browser.
 
 ## Smallest useful program
 
@@ -246,11 +246,12 @@ Optional Makefile targets demonstrate that the same framebuffer API can support 
 
 ```sh
 make doom
+make crystal
 make descent
 make prince
 ```
 
-The engine source is downloaded and cached, while commercial game data is supplied separately. See [`PORTS.md`](PORTS.md) for the required files.
+The engine source is downloaded and cached. DOOM and Crystal Caves have shareware fallbacks; the other game ports use data from your own copy. See [`PORTS.md`](PORTS.md) for details.
 
 ## Documentation
 

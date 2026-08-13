@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add a first-pass optional OpenCrystalCaves / Crystal Caves web port with a bundled shareware fallback
 - Add `clear()` for indexed framebuffers and `clear_rgb()` for direct-color framebuffers
 - Use `clear()` in the animation example and document the clear → draw → present frame pattern
 
