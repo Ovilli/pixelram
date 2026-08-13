@@ -21,7 +21,6 @@ WEB_FLAGS := \
 .PHONY: all clean palettes test $(EXAMPLES) games prince prince-source prince-data clean-prince \
 	doom doom-source doom-data doom-music clean-doom \
 	descent descent-source descent-data descent-music clean-descent \
-	openttd openttd-source openttd-data openttd-host clean-openttd
 
 all: $(HTML)
 
@@ -249,67 +248,6 @@ descent: descent-source descent-data | $(BUILD_DIR)
 clean-descent:
 	rm -f "$(BUILD_DIR)"/descent.html "$(BUILD_DIR)"/descent.js "$(BUILD_DIR)"/descent.wasm "$(BUILD_DIR)"/descent.data "$(BUILD_DIR)"/descent.hog "$(BUILD_DIR)"/descent.pig
 	rm -rf "$(DESCENT_ROOT)" "$(DESCENT_MUSIC_DIR)"
-
-
-
-# ----------------------------------------------------------------------
-# OpenTTD -- free graphics, mouse-driven 800x600 port
-# ----------------------------------------------------------------------
-
-OPENTTD_REPO := https://github.com/OpenTTD/OpenTTD.git
-OPENTTD_VERSION := 15.3
-OPENTTD_ROOT := $(CACHE_DIR)/OpenTTD
-OPENTTD_HOST_BUILD := $(OPENTTD_ROOT)/build-host
-OPENTTD_WASM_BUILD := $(OPENTTD_ROOT)/build-pixelram
-OPENTTD_BASESET_DIR := $(CACHE_DIR)/openttd-data/baseset
-
-openttd-data: | $(CACHE_DIR)
-	python3 tools/fetch_openttd_assets.py "$(OPENTTD_BASESET_DIR)"
-
-openttd-source: | $(CACHE_DIR)
-	@if [ ! -d "$(OPENTTD_ROOT)/.git" ]; then \
-		echo "Downloading OpenTTD $(OPENTTD_VERSION) source..."; \
-		git clone --depth 1 --branch "$(OPENTTD_VERSION)" "$(OPENTTD_REPO)" "$(OPENTTD_ROOT)"; \
-	fi
-	@git -C "$(OPENTTD_ROOT)" reset -q --hard "$(OPENTTD_VERSION)"
-	@git -C "$(OPENTTD_ROOT)" clean -q -fdx
-	python3 ports/openttd/prepare.py "$(OPENTTD_ROOT)" "."
-	@echo "OpenTTD source ready."
-
-openttd-host: openttd-source
-	rm -rf "$(OPENTTD_HOST_BUILD)"
-	cmake \
-		-S "$(OPENTTD_ROOT)" \
-		-B "$(OPENTTD_HOST_BUILD)" \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DOPTION_TOOLS_ONLY=ON
-	cmake --build "$(OPENTTD_HOST_BUILD)" --target tools -j"$$(nproc)"
-
-openttd: openttd-data openttd-host | $(BUILD_DIR)
-	rm -rf "$(OPENTTD_WASM_BUILD)"
-	emcmake cmake \
-		-S "$(OPENTTD_ROOT)" \
-		-B "$(OPENTTD_WASM_BUILD)" \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DHOST_BINARY_DIR="$(abspath $(OPENTTD_HOST_BUILD))" \
-		-DOPTION_USE_ASSERTS=OFF \
-		-DOPENTTD_PIXELRAM=ON \
-		-DOPENTTD_PIXELRAM_BASESET_DIR="$(abspath $(OPENTTD_BASESET_DIR))"
-	cmake --build "$(OPENTTD_WASM_BUILD)" --target openttd -j"$$(nproc)"
-	rm -f "$(BUILD_DIR)"/openttd.html "$(BUILD_DIR)"/openttd.js \
-	      "$(BUILD_DIR)"/openttd.wasm "$(BUILD_DIR)"/openttd.data
-	cp "$(OPENTTD_WASM_BUILD)"/openttd.html "$(BUILD_DIR)/"
-	@if [ -f "$(OPENTTD_WASM_BUILD)/openttd.js" ]; then cp "$(OPENTTD_WASM_BUILD)/openttd.js" "$(BUILD_DIR)/"; fi
-	@if [ -f "$(OPENTTD_WASM_BUILD)/openttd.wasm" ]; then cp "$(OPENTTD_WASM_BUILD)/openttd.wasm" "$(BUILD_DIR)/"; fi
-	@if [ -f "$(OPENTTD_WASM_BUILD)/openttd.data" ]; then cp "$(OPENTTD_WASM_BUILD)/openttd.data" "$(BUILD_DIR)/"; fi
-	@echo
-	@echo "Ready: $(BUILD_DIR)/openttd.html"
-
-clean-openttd:
-	rm -f "$(BUILD_DIR)"/openttd.html "$(BUILD_DIR)"/openttd.js \
-	      "$(BUILD_DIR)"/openttd.wasm "$(BUILD_DIR)"/openttd.data
-	rm -rf "$(OPENTTD_ROOT)" "$(CACHE_DIR)/openttd-data"
-
 
 # ----------------------------------------------------------------------
 # Prince of Persia (SDLPoP) -- first WebAssembly pass
