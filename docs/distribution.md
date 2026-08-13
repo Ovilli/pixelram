@@ -18,7 +18,7 @@ A project can vendor those files directly or download a pinned release from GitH
 ## Makefile download
 
 ```make
-PIXELRAM_VERSION := v0.1.21
+PIXELRAM_VERSION := v0.1.22
 PIXELRAM_BASE := https://raw.githubusercontent.com/specht/pixelram/$(PIXELRAM_VERSION)
 PIXELRAM_DIR := vendor/pixelram
 
@@ -34,7 +34,7 @@ $(PIXELRAM_DIR)/pixelram.h:
 Then make your executable depend on both files and compile `pixelram.c` together with your program.
 
 {: .important }
-Use a release tag such as `v0.1.21`, not `main`, in teaching material. A pinned tutorial should keep compiling even after PixelRAM evolves.
+Use a release tag such as `v0.1.22`, not `main`, in teaching material. A pinned tutorial should keep compiling even after PixelRAM evolves.
 
 ## Platform dependency
 
