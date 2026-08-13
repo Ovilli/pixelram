@@ -10,15 +10,6 @@ PixelRAM is a tiny software framebuffer for fast, low-level pixel graphics and g
 
 It is deliberately different from Pixelflow Canvas. Pixelflow Canvas provides a canvas in Visual Studio Code and can be driven from different languages. PixelRAM is a compiled framebuffer library. The familiar programming model makes it possible to move a pixel algorithm from Pixelflow Canvas to much faster C/WebAssembly code without hiding the algorithm behind a graphics framework.
 
-<a id="live-fire"></a>
-## Live fire demo
-
-This is the real `examples/fire.c`, compiled to WebAssembly as part of the documentation deployment. Move the mouse over the bottom of the display to reveal the console, CRT, and fullscreen controls.
-
-<div class="pixelram-demo pixelram-demo-fire">
-  <iframe src="demos/fire.html" title="PixelRAM fire demo" loading="lazy" allow="fullscreen"></iframe>
-</div>
-
 <style>
 .pixelram-demo {
   width: 100%;
@@ -107,6 +98,17 @@ The first explicit `present()` switches a web program to the normal explicit fra
 <div class="pixelram-demo pixelram-demo-screen">
   <iframe src="demos/animation.html" title="PixelRAM animation example" loading="lazy" allow="fullscreen"></iframe>
 </div>
+
+<a id="live-fire"></a>
+## Live fire demo
+
+This is the real `examples/fire.c`, compiled to WebAssembly as part of the documentation deployment. Move the pointer over the bottom of the display, or tap the display on a touch device, to reveal the console, CRT, and fullscreen controls.
+
+<div class="pixelram-demo pixelram-demo-fire">
+  <iframe src="demos/fire.html" title="PixelRAM fire demo" loading="lazy" allow="fullscreen"></iframe>
+</div>
+
+
 
 ## Build the repository examples
 

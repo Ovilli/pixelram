@@ -6,7 +6,61 @@ PixelRAM gives C programs the kind of screen that made early PC graphics fun: a 
 
 That makes PixelRAM small enough for teaching, but fast enough for software renderers and ports such as DOOM, Descent, and SDLPoP. The same library can be used natively or compiled to WebAssembly for the browser.
 
-## Start with fire
+## Smallest useful program
+
+For a one-shot browser demo, drawing can be this small:
+
+```c
+#include "pixelram.h"
+
+int main(void)
+{
+    if (!screen_open(320, 180, pixel_indexed8, "PixelRAM"))
+        return 1;
+
+    set_pixel(screen_width() / 2, screen_height() / 2, 10);
+    return 0;
+}
+```
+
+Color `10` is bright green in the default VGA palette. Web builds automatically show framebuffer changes until a program explicitly starts using `present()`, so a tiny one-shot example does not need a main loop. This auto-presentation is a browser convenience; portable/native animation code should use `present()` explicitly.
+
+## Add animation
+
+Animation introduces the normal PixelRAM frame loop. This example moves the same green pixel left and right:
+
+```c
+#include "pixelram.h"
+
+int main(void)
+{
+    if (!screen_open(320, 180, pixel_indexed8, "PixelRAM animation"))
+        return 1;
+
+    int x = 0;
+    int direction = 1;
+    int y = screen_height() / 2;
+
+    while (!should_close())
+    {
+        set_pixel(x, y, 0);
+
+        x += direction;
+        if (x == 0 || x == screen_width() - 1)
+            direction = -direction;
+
+        set_pixel(x, y, 10);
+        present();
+    }
+
+    screen_close();
+    return 0;
+}
+```
+
+The first explicit `present()` switches a web program from automatic one-shot presentation to the normal explicit frame model. From then on, call `present()` once after drawing each completed frame.
+
+## Fire
 
 This complete program creates the classic palette-based fire effect:
 
@@ -76,60 +130,6 @@ int main(void)
 The live version is compiled from `examples/fire.c` whenever the documentation site is deployed. The source is intentionally close to the Pixelflow Canvas fire demo: the algorithm stays visible while C/WebAssembly makes it fast.
 
 **[Read the documentation →](https://specht.github.io/pixelram/)**
-
-## Smallest useful program
-
-For a one-shot browser demo, drawing can be this small:
-
-```c
-#include "pixelram.h"
-
-int main(void)
-{
-    if (!screen_open(320, 180, pixel_indexed8, "PixelRAM"))
-        return 1;
-
-    set_pixel(screen_width() / 2, screen_height() / 2, 10);
-    return 0;
-}
-```
-
-Color `10` is bright green in the default VGA palette. Web builds automatically show framebuffer changes until a program explicitly starts using `present()`, so a tiny one-shot example does not need a main loop. This auto-presentation is a browser convenience; portable/native animation code should use `present()` explicitly.
-
-## Add animation
-
-Animation introduces the normal PixelRAM frame loop. This example moves the same green pixel left and right:
-
-```c
-#include "pixelram.h"
-
-int main(void)
-{
-    if (!screen_open(320, 180, pixel_indexed8, "PixelRAM animation"))
-        return 1;
-
-    int x = 0;
-    int direction = 1;
-    int y = screen_height() / 2;
-
-    while (!should_close())
-    {
-        set_pixel(x, y, 0);
-
-        x += direction;
-        if (x == 0 || x == screen_width() - 1)
-            direction = -direction;
-
-        set_pixel(x, y, 10);
-        present();
-    }
-
-    screen_close();
-    return 0;
-}
-```
-
-The first explicit `present()` switches a web program from automatic one-shot presentation to the normal explicit frame model. From then on, call `present()` once after drawing each completed frame.
 
 ## Frame rate
 
