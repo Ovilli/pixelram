@@ -81,6 +81,13 @@ def main() -> int:
         '''#ifndef PIXELRAM\n#include <cfgpath.h>\n#else\n#include <cstdio>\n#define MAX_PATH 512\nstatic void get_user_config_file(char* out, unsigned int maxlen, const char* appname)\n{\n  (void)appname;\n  std::snprintf(out, maxlen, "/OpenCrystalCaves.conf");\n}\n#endif\n''',
     )
 
+    state_h = root / "occ" / "occ" / "src" / "state.h"
+    replace_once(
+        state_h,
+        "  LevelId level_ = LevelId::FINALE;\n",
+        "  LevelId level_ = LevelId::INTRO;\n",
+    )
+
     state_cc = root / "occ" / "occ" / "src" / "state.cc"
     replace_once(
         state_cc,
