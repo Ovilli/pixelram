@@ -175,7 +175,7 @@ pixelram.h
 You can copy them into a project, add them to a template, or let a Makefile download a pinned release:
 
 ```make
-PIXELRAM_VERSION := v0.1.19
+PIXELRAM_VERSION := v0.1.22
 PIXELRAM_BASE := https://raw.githubusercontent.com/specht/pixelram/$(PIXELRAM_VERSION)
 PIXELRAM_DIR := vendor/pixelram
 
